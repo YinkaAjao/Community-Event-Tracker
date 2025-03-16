@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - CommunityVibe</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <a href="index.html" class="logo">Community<span>Vibe</span></a>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="events.html">Events</a></li>
+                <li><a href="create-event.html">Create Event</a></li>
+                <li><a href="login.html" class="active">Login</a></li>
+                <li><a href="signup.html" class="signup-btn">Sign Up</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="auth-container">
+            <div class="auth-form-container">
+                <h1>Welcome Back</h1>
+                <p class="auth-subtitle">Sign in to your account</p>
+                <form id="loginForm" class="auth-form">
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <div class="form-options">
+                        <div class="remember-me">
+                            <input type="checkbox" id="rememberMe" name="rememberMe">
+                            <label for="rememberMe">Remember me</label>
+                        </div>
+                        <a href="#" class="forgot-password">Forgot your password?</a>
+                    </div>
+                    <button type="submit" class="btn primary-btn btn-full">Sign in</button>
+                    <div class="auth-redirect">
+                        <p>Don't have an account? <a href="signup.html">Sign up</a></p>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-logo">
+                <div class="logo">Community<span>Vibe</span></div>
+                <p>Connecting communities through shared experiences and local events.</p>
+            </div>
+            <div class="footer-links">
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="events.html">Browse Events</a></li>
+                        <li><a href="create-event.html">Create Event</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Account</h4>
+                    <ul>
+                        <li><a href="login.html">Sign In</a></li>
+                        <li><a href="signup.html">Register</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <ul>
+                        <li><a href="mailto:contact@communityvibe.com"><i class="far fa-envelope"></i> contact@communityvibe.com</a></li>
+                        <li><a href="#"><i class="fas fa-map-marker-alt"></i> 123 Community St, City, State</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 CommunityVibe. All rights reserved.</p>
+        </div>
+    </footer>
+    <script src="js/main.js"></script>
+    <script src="js/form-validation.js"></script>
+</body>
+</html>
