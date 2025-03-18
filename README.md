@@ -1,9 +1,9 @@
 # Community Event Tracker
 
-## 📌 Project Overview
+## Project Overview
 Community Event Tracker is a web-based platform designed to help students and community members discover, track, and manage events effectively. The platform provides real-time updates, personalized notifications, and an interactive event dashboard to improve event accessibility and engagement.
 
-## 🚀 Features
+## Features
 - Event creation & management
 - RSVP system for attendees
 - Real-time notifications
@@ -11,7 +11,7 @@ Community Event Tracker is a web-based platform designed to help students and co
 - User authentication & role-based access
 - Interactive event dashboard
 
-## 🛠️ Tech Stack
+## Tech Stack
 ### **Frontend:**
 - HTML, CSS, React.js
 
@@ -24,7 +24,7 @@ Community Event Tracker is a web-based platform designed to help students and co
 ### **Hosting & Version Control:**
 - GitHub
 
-## 📂 Project Structure
+## Project Structure
 ```plaintext
 Community-Event-Tracker/
 │── frontend/         # React.js frontend
@@ -36,7 +36,7 @@ Community-Event-Tracker/
 │── .gitignore       # Files to ignore in Git
 ```
 
-## ⚙️ Installation & Setup
+## Installation & Setup
 ### **Prerequisites:**
 Ensure you have the following installed:
 - Node.js & npm
@@ -73,7 +73,7 @@ Ensure you have the following installed:
 7. **Access the application:**
    Open `http://localhost:3000` in your browser.
 
-## 🛠️ Database Design
+## Database Design
 - **Tables:** Users, Events, RSVPs, Notifications
 - **Relationships:**
   - A **user** can create multiple **events**.
@@ -83,19 +83,19 @@ Ensure you have the following installed:
   - Indexed event titles & descriptions for faster search.
   - Optimized queries using relational indexing in MySQL.
 
-## 📸 Screenshots & Resources
+## Screenshots & Resources
 - **Figma Designs:** [View Designs](#)
 - **Database Schema:** [View ERD](#)
 - **GitHub Repository:** [Community Event Tracker](https://github.com/YinkaAjao/Community-Event-Tracker)
 
-## 📌 Team Collaboration & Project Management
+## Team Collaboration & Project Management
 - **Tools Used:** GitHub, Slack, Jira, Google Drive
 - **Development Workflow:** Agile methodology with daily standups and sprint planning.
 - **Meetings & Discussions:** See `docs/` folder for meeting notes and progress reports.
 
-## 📄 License
+## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
-### **📞 Contact & Support**
+### **Contact & Support**
 For any issues or contributions, please create an issue on GitHub or reach out to the development team.
