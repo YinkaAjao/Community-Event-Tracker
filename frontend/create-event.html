@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+
 <body>
     <header>
         <div class="logo-container">
@@ -30,16 +32,17 @@
                 <a href="events.html" class="back-link">Back to Events</a>
             </div>
             <div class="event-form-container">
-                <form id="createEventForm" class="event-form">
+                <form id="eventForm" enctype="multipart/form-data" class="event-form">
                     <div class="form-group">
                         <label for="eventTitle">Event Title <span class="required">*</span></label>
-                        <input type="text" id="eventTitle" placeholder="Give your event a clear, descriptive title" required>
+                        <input type="text" id="eventTitle" name="eventTitle"
+                            placeholder="Give your event a clear, descriptive title" required>
                     </div>
-                    
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="eventCategory">Category <span class="required">*</span></label>
-                            <select id="eventCategory" required>
+                            <select id="eventCategory" name="eventCategory" required>
                                 <option value="" disabled selected>Select a category</option>
                                 <option value="workshop">Workshop</option>
                                 <option value="festival">Festival</option>
@@ -51,48 +54,52 @@
                         </div>
                         <div class="form-group">
                             <label for="eventDate">Date <span class="required">*</span></label>
-                            <input type="date" id="eventDate" required>
+                            <input type="date" id="eventDate" name="eventDate" required>
                         </div>
                     </div>
-                    
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="startTime">Start Time <span class="required">*</span></label>
-                            <input type="time" id="startTime" required>
+                            <input type="time" id="startTime" name="startTime" required>
                         </div>
                         <div class="form-group">
                             <label for="endTime">End Time</label>
-                            <input type="time" id="endTime">
+                            <input type="time" id="endTime" name="endTime">
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="venueName">Venue/Location Name <span class="required">*</span></label>
-                        <input type="text" id="venueName" placeholder="e.g. Community Center, City Park" required>
+                        <input type="text" id="venueName" name="venueName"
+                            placeholder="e.g. Community Center, City Park" required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="address">Address</label>
-                        <input type="text" id="address" placeholder="Street address, city, state, zip">
+                        <input type="text" id="address" name="address" placeholder="Street address, city, state, zip">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="eventDescription">Event Description <span class="required">*</span></label>
-                        <textarea id="eventDescription" rows="5" placeholder="Provide details about your event..." required></textarea>
+                        <textarea id="eventDescription" rows="5" name="eventDescription"
+                            placeholder="Provide details about your event..." required></textarea>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="eventImage">Event Image</label>
                         <div class="file-input-container">
-                            <input type="file" id="eventImage" accept="image/*">
+                            <input type="file" id="eventImage" name="eventImage" accept="image/*">
                             <label for="eventImage" class="file-input-label">Choose File</label>
                             <span id="file-name">No file chosen</span>
                         </div>
-                        <p class="form-hint">Recommended: Upload a high-quality image that represents your event. JPG or PNG format, maximum 5MB.</p>
+                        <p class="form-hint">Recommended: Upload a high-quality image that represents your event. JPG or
+                            PNG format, maximum 5MB.</p>
                     </div>
-                    
+
                     <div class="form-actions">
-                        <button type="button" class="btn secondary-btn" onclick="window.location.href='events.html'">Cancel</button>
+                        <button type="button" class="btn secondary-btn"
+                            onclick="window.location.href='events.html'">Cancel</button>
                         <button type="submit" class="btn primary-btn">Create Event</button>
                     </div>
                 </form>
@@ -125,7 +132,8 @@
                 <div class="footer-section">
                     <h4>Contact</h4>
                     <ul>
-                        <li><a href="mailto:contact@communityvibe.com"><i class="far fa-envelope"></i> contact@communityvibe.com</a></li>
+                        <li><a href="mailto:contact@communityvibe.com"><i class="far fa-envelope"></i>
+                                contact@communityvibe.com</a></li>
                         <li><a href="#"><i class="fas fa-map-marker-alt"></i> 123 Community St, City, State</a></li>
                     </ul>
                 </div>
@@ -135,7 +143,72 @@
             <p>&copy; 2025 CommunityVibe. All rights reserved.</p>
         </div>
     </footer>
+
+    <script>
+        // Test server connection on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch('http://localhost:5000/health');
+                const data = await response.json();
+                console.log('Server connection test successful:', data);
+            } catch (error) {
+                console.error('Server connection test failed:', error);
+                alert('Cannot connect to server. Please check your network and try again.');
+            }
+        });
+
+        // File input display
+        document.getElementById('eventImage').addEventListener('change', function () {
+            const fileName = this.files[0] ? this.files[0].name : 'No file chosen';
+            document.getElementById('file-name').textContent = fileName;
+        });
+
+        // Form submission
+        document.getElementById('eventForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.textContent;
+
+            try {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Creating...';
+
+                // Show loading state
+                submitBtn.classList.add('loading');
+
+                const response = await fetch('http://localhost:5000/create-event', {
+                    method: 'POST',
+                    body: formData
+                    // Don't set Content-Type header - let the browser set it
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `Server responded with status ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('Event created successfully!');
+                    window.location.href = 'events.html';
+                } else {
+                    throw new Error(data.message || 'Unknown error occurred');
+                }
+            } catch (error) {
+                console.error('Event creation error:', error);
+                alert('Error: ' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalBtnText;
+                submitBtn.classList.remove('loading');
+            }
+        });
+    </script>
+
     <script src="js/main.js"></script>
     <script src="js/form-validation.js"></script>
 </body>
+
 </html>
