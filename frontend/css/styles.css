@@ -728,3 +728,132 @@ input[type="file"] {
         width: 100%;
     }
 }
+
+.error-message {
+    padding: 2rem;
+    text-align: center;
+    color: #dc3545;
+    background-color: #f8d7da;
+    border-radius: 8px;
+    margin: 2rem auto;
+    max-width: 600px;
+}
+
+.loading-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.spinner {
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.error-message {
+    color: #dc3545;
+    margin-top: 5px;
+    font-size: 0.9em;
+}
+
+/* Event Card Image Styles */
+.event-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    /* Ensure all cards have equal height */
+}
+
+.event-image {
+    position: relative;
+    height: 0;
+    padding-bottom: 56.25%;
+    /* 16:9 aspect ratio (change this to suit your needs) */
+    overflow: hidden;
+}
+
+.event-image img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Ensures the image covers the area without distortion */
+    transition: transform 0.3s ease;
+}
+
+.event-card:hover .event-image img {
+    transform: scale(1.05);
+    /* Slight zoom on hover */
+}
+
+.event-details {
+    flex: 1;
+    /* Takes remaining space */
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+}
+
+.event-meta {
+    margin-top: auto;
+}
+
+/* Events Grid Container */
+.events-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 30px;
+}
+
+/* Limit description length */
+.event-description {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    /* Show max 3 lines */
+    line-clamp: 3;
+    /* Standard property */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 15px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .events-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+
+    .event-image {
+        padding-bottom: 75%;
+        /* Taller aspect ratio on mobile */
+    }
+}
+
+@media (max-width: 480px) {
+    .events-grid {
+        grid-template-columns: 1fr;
+    }
+}
