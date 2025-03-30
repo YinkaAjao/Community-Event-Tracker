@@ -1,10 +1,10 @@
 const fs = require('fs');
-const express = require("express");
-const mysql = require("mysql2/promise");
-const cors = require("cors");
-const bodyParser = require("body-parser");
-const multer = require("multer");
-const path = require("path");
+const express = require('express');
+const mysql = require('mysql2/promise');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const multer = require('multer');
+const path = require('path');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
@@ -41,7 +41,7 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     next();
 });
 
@@ -80,7 +80,61 @@ async function verifyDatabaseConnection() {
         process.exit(1);
     }
 }
-verifyDatabaseConnection();
+
+// Ensure the `events` table exists
+async function ensureEventsTableExists() {
+    try {
+        const createTableQuery = `
+            CREATE TABLE IF NOT EXISTS events (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                category VARCHAR(100) NOT NULL,
+                event_date DATE NOT NULL,
+                start_time TIME NOT NULL,
+                end_time TIME,
+                venue VARCHAR(255) NOT NULL,
+                address VARCHAR(255),
+                description TEXT NOT NULL,
+                image VARCHAR(255) DEFAULT 'default.jpg',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `;
+        await db.query(createTableQuery);
+        console.log("✅ Ensured `events` table exists.");
+    } catch (err) {
+        console.error("❌ Failed to ensure `events` table exists:", err.message);
+        process.exit(1);
+    }
+}
+
+// Ensure the `users` table exists
+async function ensureUsersTableExists() {
+    try {
+        const createTableQuery = `
+            CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(50) NOT NULL UNIQUE,
+                email VARCHAR(100) NOT NULL UNIQUE,
+                password VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `;
+        await db.query(createTableQuery);
+        console.log("✅ Ensured `users` table exists.");
+    } catch (err) {
+        console.error("❌ Failed to ensure `users` table exists:", err.message);
+        process.exit(1);
+    }
+}
+
+// Initialize database
+async function initializeDatabase() {
+    await verifyDatabaseConnection();
+    await ensureEventsTableExists();
+    await ensureUsersTableExists();
+}
+
+initializeDatabase();
 
 // Configure Multer for file uploads
 const storage = multer.diskStorage({
@@ -107,7 +161,7 @@ const upload = multer({
     fileFilter: fileFilter
 }).single("eventImage");
 
-// Create Event Route - Updated version
+// Create Event Route
 app.post("/create-event", (req, res) => {
     upload(req, res, async (err) => {
         let uploadedFile = null;
@@ -123,7 +177,7 @@ app.post("/create-event", (req, res) => {
             }
 
             uploadedFile = req.file;
-
+            
             // Validate input
             const {
                 eventTitle: title,
@@ -135,11 +189,11 @@ app.post("/create-event", (req, res) => {
                 address,
                 eventDescription: description
             } = req.body;
-
-            if (!title || !category || !eventDate || !startTime || !endTime || !venue || !address) {
+            
+            if (!title || !category || !eventDate || !startTime || !venue || !description) {
                 throw new Error("All required fields must be provided");
             }
-
+            
             // Create the event
             const [result] = await db.query(
                 `INSERT INTO events 
@@ -147,20 +201,21 @@ app.post("/create-event", (req, res) => {
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [title, category, eventDate, startTime, endTime, venue, address, description, req.file?.filename || "default.jpg"]
             );
-
+            
             // Successful response
             res.status(201).json({
                 success: true,
                 message: "Event created successfully",
-                eventId: result.insertId
+                eventId: result.insertId,
+                imageUrl: req.file ? `/uploads/${req.file.filename}` : '/uploads/default.jpg'
             });
-
+            
         } catch (error) {
             // Clean up uploaded file if there was an error
             if (uploadedFile && fs.existsSync(path.join(uploadsDir, uploadedFile.filename))) {
                 fs.unlinkSync(path.join(uploadsDir, uploadedFile.filename));
             }
-
+            
             console.error('Error in create-event:', {
                 message: error.message,
                 stack: error.stack,
@@ -169,7 +224,6 @@ app.post("/create-event", (req, res) => {
             });
 
             const statusCode = error.message.includes("required fields") ? 400 : 500;
-            
             res.status(statusCode).json({
                 success: false,
                 message: error.message,
@@ -198,7 +252,7 @@ app.get("/events", async (req, res) => {
             FROM events 
             ORDER BY event_date DESC
         `);
-
+        
         res.json({
             success: true,
             data: results
@@ -208,6 +262,133 @@ app.get("/events", async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Failed to fetch events",
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+// User Login Route
+app.post("/login", async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        // Validate input
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: "Email and password are required"
+            });
+        }
+
+        // Find user
+        const [users] = await db.query(
+            "SELECT * FROM users WHERE email = ?",
+            [email]
+        );
+
+        if (users.length === 0) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid email or password"
+            });
+        }
+
+        const user = users[0];
+        
+        // In a real app, you would hash and compare the password here
+        // For demo purposes, we'll do a simple comparison (NOT RECOMMENDED for production)
+        if (password !== user.password) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid email or password"
+            });
+        }
+        
+        // Create a safe user object (without password)
+        const safeUser = {
+            id: user.id,
+            username: user.username,
+            email: user.email
+        };
+        
+        res.status(200).json({
+            success: true,
+            message: "Login successful",
+            user: safeUser
+        });
+    } catch (error) {
+        console.error('Error in user login:', {
+            message: error.message,
+            stack: error.stack
+        });
+        
+        res.status(500).json({
+            success: false,
+            message: "Failed to log in",
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+// User Registration Route
+app.post("/register", async (req, res) => {
+    try {
+        const { username, email, password } = req.body;
+
+        // Validate input
+        if (!username || !email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: "Username, email, and password are required"
+            });
+        }
+        
+        // Simple email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid email format"
+            });
+        }
+
+        // Check if user already exists
+        const [existingUsers] = await db.query(
+            "SELECT * FROM users WHERE email = ? OR username = ?",
+            [email, username]
+        );
+
+        if (existingUsers.length > 0) {
+            return res.status(409).json({
+                success: false,
+                message: "User with this email or username already exists"
+            });
+        }
+
+        // In a real app, you would hash the password here
+        // For demo purposes, we'll store it as is (NOT RECOMMENDED for production)
+        
+        // Create the user
+        const [result] = await db.query(
+            "INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
+            [username, email, password]
+        );
+
+        res.status(201).json({
+            success: true,
+            message: "User registered successfully",
+            userId: result.insertId
+        });
+
+    } catch (error) {
+        console.error('Error in user registration:', {
+            message: error.message,
+            stack: error.stack
+        });
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to register user",
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
@@ -232,7 +413,7 @@ app.use((err, req, res, next) => {
         body: req.body,
         file: req.file
     });
-    
+
     res.status(500).json({
         success: false,
         message: 'Something went wrong!',
@@ -241,7 +422,7 @@ app.use((err, req, res, next) => {
 });
 
 // Start Server
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
     console.log('Uploads directory:', uploadsDir);
