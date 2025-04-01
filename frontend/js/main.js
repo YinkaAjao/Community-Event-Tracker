@@ -1,5 +1,8 @@
 // js/main.js
 document.addEventListener('DOMContentLoaded', function() {
+    // Create navigation
+    createNav();
+
     // Mobile menu toggle (for responsive design)
     const setupMobileMenu = () => {
         const header = document.querySelector('header');
@@ -158,11 +161,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize notifications
     setupNotifications();
-    if (document.querySelector('.notifications-toggle')) {
-        checkNotifications();
-        // Check for new notifications every minute
-        setInterval(checkNotifications, 60000);
-    }
+    checkNotifications();
+    // Check for new notifications every minute
+    setInterval(checkNotifications, 60000);
 
     // Logout function
     function logout() {

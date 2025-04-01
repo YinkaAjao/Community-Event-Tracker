@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,32 +22,11 @@
             color: var(--primary-color);
         }
     </style>
+    <script src="js/nav.js"></script>
 </head>
 <body>
     <header>
-        <div class="logo-container">
-            <a href="index.html" class="logo">Community<span>Vibe</span></a>
-        </div>
-        <nav>
-            <ul>
-                <li><a href="index.html">Home</a></li>
-                <li><a href="events.html">Events</a></li>
-                <li><a href="create-event.html" class="active">Create Event</a></li>
-                <!-- Auth nav for logged out users -->
-                <div id="auth-nav" style="display: flex;">
-                    <li><a href="login.html">Login</a></li>
-                    <li><a href="signup.html" class="signup-btn">Sign Up</a></li>
-                </div>
-                <!-- User nav for logged in users -->
-                <div id="user-nav">
-                    <li class="user-welcome">
-                        <i class="fas fa-user-circle"></i>
-                        <span id="username-display">Username</span>
-                    </li>
-                    <li><a href="#" id="logout-btn" class="signup-btn">Logout</a></li>
-                </div>
-            </ul>
-        </nav>
+        <!-- Navigation will be inserted here by nav.js -->
     </header>
 
     <main>
@@ -171,6 +149,7 @@
     </footer>
 
     <script src="js/config.js"></script>
+    <script src="js/toast.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             // Check if user is logged in
@@ -220,20 +199,11 @@
             try {
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Creating...';
-                
-                // Show loading state
                 submitBtn.classList.add('loading');
-
-                // Log what's being sent to the server
-                console.log('Submitting form data to the server');
-                for (let pair of formData.entries()) {
-                    console.log(pair[0] + ': ' + (pair[1] instanceof File ? pair[1].name : pair[1]));
-                }
 
                 const response = await fetch(CONFIG.getApiUrl('create-event'), {
                     method: 'POST',
                     body: formData
-                    // Don't set Content-Type header - let the browser set it with boundary
                 });
 
                 if (!response.ok) {
@@ -245,14 +215,26 @@
                 console.log('Server response:', data);
 
                 if (data.success) {
-                    alert('Event created successfully!');
-                    window.location.href = 'events.html';
+                    window.toast.show({
+                        title: 'Success!',
+                        message: `Event created successfully! ${data.notificationsCreated} users will be notified.`,
+                        type: 'success',
+                        duration: 3000
+                    });
+                    setTimeout(() => {
+                        window.location.href = 'events.html';
+                    }, 2000);
                 } else {
                     throw new Error(data.message || 'Unknown error occurred');
                 }
             } catch (error) {
                 console.error('Event creation error:', error);
-                alert('Error: ' + error.message);
+                window.toast.show({
+                    title: 'Error!',
+                    message: error.message,
+                    type: 'error',
+                    duration: 5000
+                });
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = originalBtnText;

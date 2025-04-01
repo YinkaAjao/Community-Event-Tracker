@@ -151,12 +151,7 @@ async function ensureUserCategoriesTableExists() {
 // Ensure the `notifications` table exists
 async function ensureNotificationsTableExists() {
     try {
-        // First drop the existing table if it exists
-        const dropTableQuery = `DROP TABLE IF EXISTS notifications;`;
-        await db.query(dropTableQuery);
-        console.log("✅ Dropped existing notifications table if it existed.");
-
-        // Create the table with all required fields including category
+        // Create the table only if it doesn't exist
         const createTableQuery = `
             CREATE TABLE IF NOT EXISTS notifications (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -170,7 +165,7 @@ async function ensureNotificationsTableExists() {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         `;
         await db.query(createTableQuery);
-        console.log("✅ Created new notifications table with category field.");
+        console.log("✅ Ensured notifications table exists.");
     } catch (err) {
         console.error("❌ Failed to ensure notifications table exists:", err.message);
         process.exit(1);
@@ -211,108 +206,100 @@ const upload = multer({
     storage: storage,
     limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: fileFilter
-}).single("eventImage");
+});
 
 // Create Event Route
-app.post("/create-event", (req, res) => {
-    upload(req, res, async (err) => {
-        let uploadedFile = null;
-        let connection;
-        
-        try {
-            // Handle upload error check
-            if (err) {
-                if (err instanceof multer.MulterError) {
-                    throw new Error(`File upload error: ${err.message}`);
-                } else {
-                    throw err;
-                }
-            }
+app.post("/create-event", upload.single('eventImage'), async (req, res) => {
+    let connection;
+    let uploadedFile;
 
-            uploadedFile = req.file;
-            connection = await db.getConnection();
-            await connection.beginTransaction();
+    try {
+        uploadedFile = req.file;
+        connection = await db.getConnection();
+        await connection.beginTransaction();
 
-            // Get request body data
-            const {
-                eventTitle: title,
-                eventCategory: category,
-                eventDate,
-                startTime,
-                endTime,
-                venueName: venue,
-                address,
-                eventDescription: description
-            } = req.body;
+        // Get request body data
+        const {
+            eventTitle: title,
+            eventCategory: category,
+            eventDate,
+            startTime,
+            endTime,
+            venueName: venue,
+            address,
+            eventDescription: description
+        } = req.body;
 
-            // Validate required fields
-            if (!title || !category || !eventDate || !startTime || !venue || !description) {
-                throw new Error("All required fields must be provided");
-            }
-
-            // 1. Create the event
-            const [eventResult] = await connection.query(
-                `INSERT INTO events 
-                (title, category, event_date, start_time, end_time, venue, address, description, image) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [title, category, eventDate, startTime, endTime, venue, address, description, req.file?.filename || "default.jpg"]
-            );
-
-            // 2. Find users who are interested in this category
-            const [interestedUsers] = await connection.query(
-                `SELECT DISTINCT u.id 
-                 FROM users u 
-                 INNER JOIN user_categories uc ON u.id = uc.user_id 
-                 WHERE LOWER(uc.category) = LOWER(?)`,
-                [category]
-            );
-
-            // 3. Create notifications for interested users
-            if (interestedUsers.length > 0) {
-                const notificationValues = interestedUsers.map(user => [
-                    user.id,
-                    `New ${category} Event`,
-                    `A new ${category} event "${title}" has been added`,
-                    category,
-                    false,
-                    new Date()
-                ]);
-
-                const [notificationResult] = await connection.query(
-                    `INSERT INTO notifications 
-                    (user_id, title, message, category, \`read\`, created_at) 
-                    VALUES ?`,
-                    [notificationValues]
-                );
-
-                console.log(`✅ Created ${notificationResult.affectedRows} notifications`);
-            }
-
-            await connection.commit();
-
-            res.status(201).json({
-                success: true,
-                message: "Event created successfully",
-                eventId: eventResult.insertId,
-                notificationsCreated: interestedUsers.length
-            });
-
-        } catch (error) {
-            if (connection) await connection.rollback();
-            
-            if (uploadedFile && fs.existsSync(path.join(uploadsDir, uploadedFile.filename))) {
-                fs.unlinkSync(path.join(uploadsDir, uploadedFile.filename));
-            }
-
-            console.error('Error creating event:', error);
-            res.status(500).json({
-                success: false,
-                message: error.message
-            });
-        } finally {
-            if (connection) connection.release();
+        // Validate required fields
+        if (!title || !category || !eventDate || !startTime || !venue || !description) {
+            throw new Error("All required fields must be provided");
         }
-    });
+
+        // 1. Create the event
+        const [eventResult] = await connection.query(
+            `INSERT INTO events 
+            (title, category, event_date, start_time, end_time, venue, address, description, image) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [title, category, eventDate, startTime, endTime, venue, address, description, req.file?.filename || "default.jpg"]
+        );
+
+        // 2. Find users who are interested in this category
+        const [interestedUsers] = await connection.query(
+            `SELECT DISTINCT u.id, u.username, u.email
+             FROM users u 
+             INNER JOIN user_categories uc ON u.id = uc.user_id 
+             WHERE LOWER(uc.category) = LOWER(?)`,
+            [category]
+        );
+
+        // 3. Create notifications for interested users
+        let notificationCount = 0;
+        if (interestedUsers.length > 0) {
+            const notificationValues = interestedUsers.map(user => [
+                user.id,
+                `New ${category} Event`,
+                `A new event "${title}" has been added that matches your interests.`,
+                category,
+                false,
+                new Date()
+            ]);
+
+            const [notificationResult] = await connection.query(
+                `INSERT INTO notifications 
+                (user_id, title, message, category, \`read\`, created_at) 
+                VALUES ?`,
+                [notificationValues]
+            );
+
+            notificationCount = notificationResult.affectedRows;
+            console.log(`✅ Created ${notificationCount} notifications for ${category} event`);
+        }
+
+        await connection.commit();
+
+        res.status(201).json({
+            success: true,
+            message: "Event created successfully",
+            eventId: eventResult.insertId,
+            notificationsCreated: notificationCount
+        });
+
+    } catch (error) {
+        if (connection) await connection.rollback();
+        
+        // Clean up uploaded file if there was an error
+        if (uploadedFile && fs.existsSync(path.join(uploadsDir, uploadedFile.filename))) {
+            fs.unlinkSync(path.join(uploadsDir, uploadedFile.filename));
+        }
+
+        console.error('Error creating event:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    } finally {
+        if (connection) connection.release();
+    }
 });
 
 // Fetch Events Route
