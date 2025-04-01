@@ -243,7 +243,16 @@
                 try {
                     eventsContainer.innerHTML = '<div class="loading-message">Loading events...</div>';
 
-                    const response = await fetch(CONFIG.getApiUrl('events'));
+                    // Get current user ID if logged in
+                    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+                    const userId = currentUser ? currentUser.id : null;
+                    
+                    // Add userId to query params if available
+                    const url = userId 
+                        ? CONFIG.getApiUrl(`events?userId=${userId}`)
+                        : CONFIG.getApiUrl('events');
+
+                    const response = await fetch(url);
 
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);

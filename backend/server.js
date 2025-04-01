@@ -171,10 +171,6 @@ async function ensureNotificationsTableExists() {
         `;
         await db.query(createTableQuery);
         console.log("✅ Created new notifications table with category field.");
-
-        // Verify the table structure
-        const [columns] = await db.query('SHOW COLUMNS FROM notifications');
-        console.log("Table structure:", columns.map(col => col.Field));
     } catch (err) {
         console.error("❌ Failed to ensure notifications table exists:", err.message);
         process.exit(1);
@@ -322,7 +318,20 @@ app.post("/create-event", (req, res) => {
 // Fetch Events Route
 app.get("/events", async (req, res) => {
     try {
-        const [results] = await db.query(`
+        const userId = req.query.userId;
+        let userCategories = [];
+
+        // If userId provided, get their interests
+        if (userId) {
+            const [categories] = await db.query(
+                "SELECT category FROM user_categories WHERE user_id = ?",
+                [userId]  
+            );
+            userCategories = categories.map(c => c.category);
+        }
+
+        // Modify query based on whether user has any categories
+        const query = `
             SELECT 
                 id,
                 title,
@@ -334,10 +343,19 @@ app.get("/events", async (req, res) => {
                 address,
                 description,
                 image,
-                created_at
+                created_at,
+                ${userCategories.length > 0 ? 
+                    `CASE 
+                        WHEN category IN (${userCategories.map(() => '?').join(',')}) THEN 1 
+                        ELSE 0 
+                    END`
+                    : '0'
+                } as interest_match
             FROM events 
-            ORDER BY event_date DESC
-        `);
+            ORDER BY interest_match DESC, event_date ASC
+        `;
+        
+        const [results] = await db.query(query, userCategories);
         
         res.json({
             success: true,
@@ -347,8 +365,7 @@ app.get("/events", async (req, res) => {
         console.error('Error fetching events:', error);
         res.status(500).json({
             success: false,
-            message: "Failed to fetch events",
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            message: "Failed to fetch events"
         });
     }
 });

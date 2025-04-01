@@ -97,9 +97,9 @@
             <div class="hero-content">
                 <h1>Never Miss A Community Event Again</h1>
                 <p>Join us in celebrating local happenings. Whether it's workshops, festivals, or meetups, find and share the events that matter to you.</p>
-                <div class="hero-buttons">
+                <div class="hero-buttons" id="hero-cta">
                     <a href="events.html" class="btn primary-btn">Browse Events</a>
-                    <a href="signup.html" class="btn secondary-btn">Sign Up Free</a>
+                    <a href="signup.html" class="btn secondary-btn auth-only">Sign Up Free</a>
                 </div>
             </div>
             <div class="hero-image">
@@ -135,60 +135,13 @@
                 <h2>Upcoming Events</h2>
                 <a href="events.html" class="view-all">View all →</a>
             </div>
-            <div class="events-grid">
-                <div class="event-card">
-                    <div class="event-image">
-                        <img src="images/events/gardening.jpg" alt="Community Gardening Workshop">
-                        <div class="event-date">Jul 15, 2023</div>
-                        <div class="event-tag">Workshop</div>
-                    </div>
-                    <div class="event-details">
-                        <h3>Community Gardening Workshop</h3>
-                        <p>Learn sustainable gardening practices from local experts.</p>
-                        <div class="event-meta">
-                            <div class="event-location"><i class="fas fa-map-marker-alt"></i> Downtown Community Center</div>
-                            <div class="event-time"><i class="far fa-clock"></i> 10:00 AM - 12:00 PM</div>
-                        </div>
-                        <a href="#" class="view-details">View Details →</a>
-                    </div>
-                </div>
-                <div class="event-card">
-                    <div class="event-image">
-                        <img src="images/events/festival.jpg" alt="Local Arts Festival">
-                        <div class="event-date">Aug 5, 2023</div>
-                        <div class="event-tag">Festival</div>
-                    </div>
-                    <div class="event-details">
-                        <h3>Local Arts Festival</h3>
-                        <p>Celebrating creativity with performances, exhibits, and food.</p>
-                        <div class="event-meta">
-                            <div class="event-location"><i class="fas fa-map-marker-alt"></i> City Park Pavilion</div>
-                            <div class="event-time"><i class="far fa-clock"></i> 11:00 AM - 6:00 PM</div>
-                        </div>
-                        <a href="#" class="view-details">View Details →</a>
-                    </div>
-                </div>
-                <div class="event-card">
-                    <div class="event-image">
-                        <img src="images/events/meetup.jpg" alt="Tech Entrepreneurs Meetup">
-                        <div class="event-date">Jul 28, 2023</div>
-                        <div class="event-tag">Meetup</div>
-                    </div>
-                    <div class="event-details">
-                        <h3>Tech Entrepreneurs Meetup</h3>
-                        <p>Network with local tech founders and developers.</p>
-                        <div class="event-meta">
-                            <div class="event-location"><i class="fas fa-map-marker-alt"></i> Innovation Hub</div>
-                            <div class="event-time"><i class="far fa-clock"></i> 6:30 PM - 8:30 PM</div>
-                        </div>
-                        <a href="#" class="view-details">View Details →</a>
-                    </div>
-                </div>
+            <div class="events-grid" id="upcomingEvents">
+                <!-- Will be populated by JavaScript -->
             </div>
         </section>
 
         <!-- Community Join Section -->
-        <section class="join-community">
+        <section class="join-community auth-only">
             <h2>Join Our Growing Community</h2>
             <p>Thousands of people are discovering local events and making connections every day. Don't miss out on what's happening around you.</p>
             <a href="signup.html" class="btn primary-btn">Get Started Today</a>
@@ -232,5 +185,93 @@
     </footer>
     <script src="js/config.js"></script>
     <script src="js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            const upcomingEventsContainer = document.getElementById('upcomingEvents');
+            const authOnlyElements = document.querySelectorAll('.auth-only');
+            
+            // Check if user is logged in
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            
+            // Hide auth-only elements if user is logged in
+            authOnlyElements.forEach(element => {
+                element.style.display = currentUser ? 'none' : '';
+            });
+
+            // Original event loading code follows...
+            function formatTime(timeString) {
+                if (!timeString) return '';
+                const [hours, minutes] = timeString.split(':');
+                const hour = parseInt(hours);
+                const ampm = hour >= 12 ? 'PM' : 'AM';
+                const hour12 = hour % 12 || 12;
+                return `${hour12}:${minutes} ${ampm}`;
+            }
+
+            // Format date to "Month Day, Year" format
+            function formatDate(dateString) {
+                const options = { year: 'numeric', month: 'short', day: 'numeric' };
+                return new Date(dateString).toLocaleDateString('en-US', options);
+            }
+
+            // Load upcoming events
+            async function loadUpcomingEvents() {
+                try {
+                    // Get current user for personalized events
+                    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+                    const url = currentUser 
+                        ? CONFIG.getApiUrl(`events?userId=${currentUser.id}`)
+                        : CONFIG.getApiUrl('events');
+
+                    const response = await fetch(url);
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Take only first 4 events, prioritizing matched interests
+                        const upcomingEvents = data.data
+                            .sort((a, b) => {
+                                // Sort by interest_match first, then by date
+                                if (a.interest_match !== b.interest_match) {
+                                    return b.interest_match - a.interest_match;
+                                }
+                                return new Date(a.event_date) - new Date(b.event_date);
+                            })
+                            .slice(0, 4);
+
+                        upcomingEventsContainer.innerHTML = upcomingEvents.map(event => `
+                            <div class="event-card ${event.interest_match ? 'matched-interest' : ''}">
+                                <div class="event-image">
+                                    <img src="${CONFIG.getUploadsUrl()}/${event.image}" 
+                                         alt="${event.title}"
+                                         onerror="this.src='${CONFIG.getUploadsUrl()}/default.jpg'">
+                                    <div class="event-date">${formatDate(event.event_date)}</div>
+                                    <div class="event-tag">${event.category}</div>
+                                </div>
+                                <div class="event-details">
+                                    <h3>${event.title}</h3>
+                                    <p>${event.description}</p>
+                                    <div class="event-meta">
+                                        <div class="event-location">
+                                            <i class="fas fa-map-marker-alt"></i> ${event.venue}
+                                        </div>
+                                        <div class="event-time">
+                                            <i class="far fa-clock"></i> 
+                                            ${formatTime(event.start_time)} - ${formatTime(event.end_time)}
+                                        </div>
+                                    </div>
+                                    <a href="event-details.html?id=${event.id}" class="view-details">View Details →</a>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                } catch (error) {
+                    console.error('Error loading upcoming events:', error);
+                    upcomingEventsContainer.innerHTML = '<p class="error-message">Failed to load upcoming events</p>';
+                }
+            }
+
+            loadUpcomingEvents();
+        });
+    </script>
 </body>
 </html>
