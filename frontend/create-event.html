@@ -1,14 +1,29 @@
+
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create an Event - CommunityVibe</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        #user-nav {
+            display: none;
+            align-items: center;
+            gap: 15px;
+        }
+        .user-welcome {
+            display: flex;
+            align-items: center;
+            color: var(--text-color);
+        }
+        .user-welcome i {
+            margin-right: 6px;
+            color: var(--primary-color);
+        }
+    </style>
 </head>
-
 <body>
     <header>
         <div class="logo-container">
@@ -19,8 +34,19 @@
                 <li><a href="index.html">Home</a></li>
                 <li><a href="events.html">Events</a></li>
                 <li><a href="create-event.html" class="active">Create Event</a></li>
-                <li><a href="login.html">Login</a></li>
-                <li><a href="signup.html" class="signup-btn">Sign Up</a></li>
+                <!-- Auth nav for logged out users -->
+                <div id="auth-nav" style="display: flex;">
+                    <li><a href="login.html">Login</a></li>
+                    <li><a href="signup.html" class="signup-btn">Sign Up</a></li>
+                </div>
+                <!-- User nav for logged in users -->
+                <div id="user-nav">
+                    <li class="user-welcome">
+                        <i class="fas fa-user-circle"></i>
+                        <span id="username-display">Username</span>
+                    </li>
+                    <li><a href="#" id="logout-btn" class="signup-btn">Logout</a></li>
+                </div>
             </ul>
         </nav>
     </header>
@@ -144,13 +170,24 @@
         </div>
     </footer>
 
+    <script src="js/config.js"></script>
     <script>
-        // Test server connection on page load
         document.addEventListener('DOMContentLoaded', async () => {
+            // Check if user is logged in
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            
+            // If not logged in, redirect to login with return URL
+            if (!currentUser) {
+                window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+                return;
+            }
+            
+            // Test server connection on page load
             try {
-                const response = await fetch('http://localhost:5000/health');
-                const data = await response.json();
-                console.log('Server connection test successful:', data);
+                const response = await fetch(CONFIG.getApiUrl('health'));
+                if (!response.ok) {
+                    throw new Error('Server health check failed');
+                }
             } catch (error) {
                 console.error('Server connection test failed:', error);
                 alert('Cannot connect to server. Please check your network and try again.');
@@ -161,6 +198,16 @@
         document.getElementById('eventImage').addEventListener('change', function () {
             const fileName = this.files[0] ? this.files[0].name : 'No file chosen';
             document.getElementById('file-name').textContent = fileName;
+            
+            // Preview image if browser supports it
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    // You could add an image preview here if needed
+                    console.log('Image loaded successfully');
+                };
+                reader.readAsDataURL(this.files[0]);
+            }
         });
 
         // Form submission
@@ -173,14 +220,20 @@
             try {
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Creating...';
-
+                
                 // Show loading state
                 submitBtn.classList.add('loading');
 
-                const response = await fetch('http://localhost:5000/create-event', {
+                // Log what's being sent to the server
+                console.log('Submitting form data to the server');
+                for (let pair of formData.entries()) {
+                    console.log(pair[0] + ': ' + (pair[1] instanceof File ? pair[1].name : pair[1]));
+                }
+
+                const response = await fetch(CONFIG.getApiUrl('create-event'), {
                     method: 'POST',
                     body: formData
-                    // Don't set Content-Type header - let the browser set it
+                    // Don't set Content-Type header - let the browser set it with boundary
                 });
 
                 if (!response.ok) {
@@ -189,6 +242,7 @@
                 }
 
                 const data = await response.json();
+                console.log('Server response:', data);
 
                 if (data.success) {
                     alert('Event created successfully!');
@@ -210,5 +264,4 @@
     <script src="js/main.js"></script>
     <script src="js/form-validation.js"></script>
 </body>
-
 </html>

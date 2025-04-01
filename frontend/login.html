@@ -6,6 +6,30 @@
     <title>Login - CommunityVibe</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .error-feedback {
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        .form-loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.7s linear infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -28,14 +52,17 @@
             <div class="auth-form-container">
                 <h1>Welcome Back</h1>
                 <p class="auth-subtitle">Sign in to your account</p>
+                <div id="login-message" style="display: none; padding: 10px; margin-bottom: 15px; border-radius: 4px;"></div>
                 <form id="loginForm" class="auth-form">
                     <div class="form-group">
                         <label for="email">Email Address</label>
                         <input type="email" id="email" name="email" required>
+                        <div class="error-feedback" id="email-error"></div>
                     </div>
                     <div class="form-group">
                         <label for="password">Password</label>
                         <input type="password" id="password" name="password" required>
+                        <div class="error-feedback" id="password-error"></div>
                     </div>
                     <div class="form-options">
                         <div class="remember-me">
@@ -44,7 +71,10 @@
                         </div>
                         <a href="#" class="forgot-password">Forgot your password?</a>
                     </div>
-                    <button type="submit" class="btn primary-btn btn-full">Sign in</button>
+                    <button type="submit" class="btn primary-btn btn-full">
+                        Sign in
+                        <span id="loading-spinner" class="loading-spinner"></span>
+                    </button>
                     <div class="auth-redirect">
                         <p>Don't have an account? <a href="signup.html">Sign up</a></p>
                     </div>
@@ -88,7 +118,102 @@
             <p>&copy; 2025 CommunityVibe. All rights reserved.</p>
         </div>
     </footer>
+    
+    <script src="js/config.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.getElementById('loginForm');
+            const messageDiv = document.getElementById('login-message');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            
+            function showError(fieldId, message) {
+                const errorElement = document.getElementById(fieldId + '-error');
+                if (errorElement) {
+                    errorElement.textContent = message;
+                }
+            }
+            
+            function clearErrors() {
+                const errorElements = document.querySelectorAll('.error-feedback');
+                errorElements.forEach(el => el.textContent = '');
+            }
+            
+            function showMessage(message, isSuccess) {
+                messageDiv.textContent = message;
+                messageDiv.style.display = 'block';
+                messageDiv.style.backgroundColor = isSuccess ? '#d4edda' : '#f8d7da';
+                messageDiv.style.color = isSuccess ? '#155724' : '#721c24';
+            }
+            
+            if (loginForm) {
+                loginForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    clearErrors();
+                    
+                    // Get form values
+                    const email = document.getElementById('email').value.trim();
+                    const password = document.getElementById('password').value;
+                    
+                    // Simple validation
+                    let isValid = true;
+                    
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(email)) {
+                        showError('email', 'Please enter a valid email address');
+                        isValid = false;
+                    }
+                    
+                    if (!password) {
+                        showError('password', 'Please enter your password');
+                        isValid = false;
+                    }
+                    
+                    if (!isValid) {
+                        return;
+                    }
+                    
+                    // Show loading state
+                    loadingSpinner.style.display = 'inline-block';
+                    loginForm.classList.add('form-loading');
+                    
+                    try {
+                        const response = await fetch(CONFIG.getApiUrl('login'), {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ email, password })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (response.ok && data.success) {
+                            // Save user data to localStorage for session management
+                            localStorage.setItem('currentUser', JSON.stringify(data.user));
+                            
+                            showMessage('Login successful! Redirecting...', true);
+                            
+                            // Get redirect URL from query params or default to index.html
+                            const urlParams = new URLSearchParams(window.location.search);
+                            const redirectUrl = urlParams.get('redirect') || 'index.html';
+                            
+                            setTimeout(() => {
+                                window.location.href = redirectUrl;
+                            }, 1000);
+                        } else {
+                            showMessage(data.message || 'Login failed. Please check your credentials.', false);
+                        }
+                    } catch (error) {
+                        console.error('Login error:', error);
+                        showMessage('An error occurred. Please try again later.', false);
+                    } finally {
+                        loadingSpinner.style.display = 'none';
+                        loginForm.classList.remove('form-loading');
+                    }
+                });
+            }
+        });
+    </script>
     <script src="js/main.js"></script>
-    <script src="js/form-validation.js"></script>
 </body>
 </html>

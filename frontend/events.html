@@ -27,7 +27,32 @@
             height: auto;
             display: block;
         }
+
+        #user-nav {
+            display: none;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-welcome {
+            display: flex;
+            align-items: center;
+            color: var(--text-color);
+        }
+
+        .user-welcome i {
+            margin-right: 6px;
+            color: var(--primary-color);
+        }
     </style>
+    <script>
+        // Define handleImageError function in the global scope
+        function handleImageError(img) {
+            img.onerror = null; // Prevent infinite error loop
+            img.src = 'http://localhost:5001/uploads/default.jpg';
+            img.alt = 'Default event image';
+        }
+    </script>
 </head>
 
 <body>
@@ -40,8 +65,19 @@
                 <li><a href="index.html">Home</a></li>
                 <li><a href="events.html" class="active">Events</a></li>
                 <li><a href="create-event.html">Create Event</a></li>
-                <li><a href="login.html">Login</a></li>
-                <li><a href="signup.html" class="signup-btn">Sign Up</a></li>
+                <!-- Auth nav for logged out users -->
+                <div id="auth-nav" style="display: flex;">
+                    <li><a href="login.html">Login</a></li>
+                    <li><a href="signup.html" class="signup-btn">Sign Up</a></li>
+                </div>
+                <!-- User nav for logged in users -->
+                <div id="user-nav">
+                    <li class="user-welcome">
+                        <i class="fas fa-user-circle"></i>
+                        <span id="username-display">Username</span>
+                    </li>
+                    <li><a href="#" id="logout-btn" class="signup-btn">Logout</a></li>
+                </div>
             </ul>
         </nav>
     </header>
@@ -73,7 +109,7 @@
             <div class="event-share-content">
                 <h2>Have an event to share?</h2>
                 <p>Add your community event to our platform and reach more people.</p>
-                <a href="create-event.html" class="btn primary-btn">Create an Event</a>
+                <a href="interests.html" class="btn primary-btn">Add Interest</a>
             </div>
         </section>
     </main>
@@ -110,11 +146,12 @@
                 </div>
             </div>
         </div>
-        <div class="footer-bottom">
-            <p>&copy; 2025 CommunityVibe. All rights reserved.</p>
+        <div class="footer-bottom">            <p>&copy; 2025 CommunityVibe. All rights reserved.</p>
         </div>
     </footer>
 
+    <script src="js/config.js"></script>
+    <script src="js/main.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const eventsContainer = document.getElementById("eventsContainer");
@@ -140,7 +177,7 @@
             // Handle image errors
             function handleImageError(img) {
                 img.onerror = null;
-                img.src = 'http://localhost:5000/uploads/default.jpg';
+                img.src = CONFIG.getUploadsUrl() + '/default.jpg';
                 img.alt = 'Default event image';
             }
 
@@ -159,8 +196,8 @@
                     eventCard.dataset.category = event.category.toLowerCase();
 
                     const imageUrl = event.image
-                        ? `http://localhost:5000/uploads/${event.image}`
-                        : 'http://localhost:5000/uploads/default.jpg';
+                        ? `${CONFIG.getUploadsUrl()}/${event.image}`
+                        : `${CONFIG.getUploadsUrl()}/default.jpg`;
 
                     eventCard.innerHTML = `
                         <div class="event-image">
@@ -206,7 +243,7 @@
                 try {
                     eventsContainer.innerHTML = '<div class="loading-message">Loading events...</div>';
 
-                    const response = await fetch('http://localhost:5000/events');
+                    const response = await fetch(CONFIG.getApiUrl('events'));
 
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);

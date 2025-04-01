@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Your Interests - CommunityVibe</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <style>
+/* Interests Page Styles */
+.interests-container {
+  max-width: 900px;
+  margin: 3rem auto;
+  padding: 2rem;
+  background-color: var(--bg-alt);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+}
+
+.interests-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.interests-header h1 {
+  color: var(--primary-color);
+  margin-bottom: 0.5rem;
+}
+
+.interests-header p {
+  color: var(--text-light);
+  font-size: 1.1rem;
+}
+
+.interests-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.interest-tile {
+  position: relative;
+  height: 120px;
+}
+
+.interest-tile input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.interest-tile label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  padding: 1.5rem;
+  background-color: var(--bg-color);
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: center;
+}
+
+.interest-tile label i {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+  color: var(--text-light);
+  transition: var(--transition);
+}
+
+.interest-tile label span {
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+/* Hover effect */
+.interest-tile label:hover {
+  border-color: var(--primary-light);
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.interest-tile label:hover i {
+  color: var(--primary-color);
+}
+
+/* Selected state */
+.interest-tile input[type="checkbox"]:checked + label {
+  background-color: var(--primary-light);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.interest-tile input[type="checkbox"]:checked + label i,
+.interest-tile input[type="checkbox"]:checked + label span {
+  color: white;
+}
+
+/* Focus state for accessibility */
+.interest-tile input[type="checkbox"]:focus + label {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.interests-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.interests-actions .btn {
+  min-width: 150px;
+}
+
+/* Add active state for navigation */
+nav a.active {
+  color: var(--primary-color);
+  font-weight: 600;
+  position: relative;
+}
+
+nav a.active::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background-color: var(--primary-color);
+  border-radius: 3px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .interests-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .interests-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .interests-actions .btn {
+    width: 100%;
+    max-width: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .interests-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .interest-tile {
+    height: 100px;
+  }
+}
+    </style>
+    <header>
+        <div class="logo-container">
+            <a href="index.html" class="logo">Community<span>Vibe</span></a>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="events.html">Events</a></li>
+                <li><a href="create-event.html">Create Event</a></li>
+                <li><a href="interests.html" class="active">Interests</a></li>
+                <div id="auth-nav" style="display: flex;">
+                    <li><a href="login.html">Login</a></li>
+                    <li><a href="signup.html" class="signup-btn">Sign Up</a></li>
+                </div>
+                <div id="user-nav" style="display: none;">
+                    <li class="user-welcome">
+                        <i class="fas fa-user-circle"></i>
+                        <span id="username-display">Username</span>
+                    </li>
+                    <li><a href="#" id="logout-btn" class="signup-btn">Logout</a></li>
+                </div>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="interests-container">
+            <div class="interests-header">
+                <h1>Select Your Interests</h1>
+                <p>Choose the types of events you'd like to see more of</p>
+            </div>
+            <div class="interests-grid">
+                <!-- Will be populated by JavaScript -->
+            </div>
+            <div class="interests-actions">
+                <button class="btn secondary-btn" onclick="window.location.href='events.html'">Skip</button>
+                <button class="btn primary-btn" id="saveInterests">Save Preferences</button>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <!-- ... existing footer code ... -->
+    </footer>
+
+    <script src="js/config.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const categories = [
+                'Workshop', 'Festival', 'Meetup', 'Volunteer', 'Market', 'Sports',
+                'Music', 'Technology', 'Education', 'Art', 'Food', 'Business'
+            ];
+
+            const interestsGrid = document.querySelector('.interests-grid');
+            
+            // Create category tiles
+            categories.forEach(category => {
+                const tile = document.createElement('div');
+                tile.className = 'interest-tile';
+                tile.innerHTML = `
+                    <input type="checkbox" id="${category.toLowerCase()}" value="${category}">
+                    <label for="${category.toLowerCase()}">
+                        <i class="fas fa-${getCategoryIcon(category)}"></i>
+                        <span>${category}</span>
+                    </label>
+                `;
+                interestsGrid.appendChild(tile);
+            });
+
+            // Load existing preferences if user is logged in
+            loadUserCategories();
+
+            // Save preferences
+            document.getElementById('saveInterests').addEventListener('click', saveUserCategories);
+
+            function getCategoryIcon(category) {
+                const icons = {
+                    'Workshop': 'tools',
+                    'Festival': 'music',
+                    'Meetup': 'users',
+                    'Volunteer': 'hands-helping',
+                    'Market': 'store',
+                    'Sports': 'running',
+                    'Music': 'guitar',
+                    'Technology': 'laptop-code',
+                    'Education': 'graduation-cap',
+                    'Art': 'palette',
+                    'Food': 'utensils',
+                    'Business': 'briefcase'
+                };
+                return icons[category] || 'star';
+            }
+
+            async function loadUserCategories() {
+                const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+                if (!currentUser) {
+                    window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+                    return;
+                }
+
+                try {
+                    const response = await fetch(CONFIG.getApiUrl(`user-categories/${currentUser.id}`));
+                    const data = await response.json();
+
+                    if (data.success) {
+                        data.data.forEach(category => {
+                            const checkbox = document.getElementById(category.toLowerCase());
+                            if (checkbox) checkbox.checked = true;
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error loading interests:', error);
+                }
+            }
+
+            async function saveUserCategories() {
+                const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+                if (!currentUser) return;
+
+                const selectedCategories = Array.from(document.querySelectorAll('.interest-tile input:checked'))
+                    .map(checkbox => checkbox.value);
+
+                try {
+                    const response = await fetch(CONFIG.getApiUrl('user-categories'), {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            userId: currentUser.id,
+                            categories: selectedCategories
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        alert('Preferences saved successfully!');
+                        window.location.href = 'events.html';
+                    } else {
+                        throw new Error(data.message);
+                    }
+                } catch (error) {
+                    console.error('Error saving interests:', error);
+                    alert('Failed to save preferences. Please try again.');
+                }
+            }
+        });
+    </script>
+</body>
+</html>
