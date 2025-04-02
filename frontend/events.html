@@ -49,7 +49,7 @@
         // Define handleImageError function in the global scope
         function handleImageError(img) {
             img.onerror = null; // Prevent infinite error loop
-            img.src = 'http://localhost:5001/uploads/default.jpg';
+            img.src = 'http://localhost:5000/uploads/default.jpg';
             img.alt = 'Default event image';
         }
     </script>
@@ -125,7 +125,8 @@
                 </div>
             </div>
         </div>
-        <div class="footer-bottom">            <p>&copy; 2025 CommunityVibe. All rights reserved.</p>
+        <div class="footer-bottom">
+            <p>&copy; 2025 CommunityVibe. All rights reserved.</p>
         </div>
     </footer>
 
@@ -161,6 +162,7 @@
             }
 
             // Render events to the DOM
+
             function renderEvents(events) {
                 eventsContainer.innerHTML = '';
 
@@ -179,28 +181,28 @@
                         : `${CONFIG.getUploadsUrl()}/default.jpg`;
 
                     eventCard.innerHTML = `
-                        <div class="event-image">
-                            <img src="${imageUrl}" 
-                                 alt="${event.title}"
-                                 onerror="handleImageError(this)">
-                            <div class="event-date">${formatDate(event.event_date)}</div>
-                            <div class="event-tag">${event.category}</div>
-                        </div>
-                        <div class="event-details">
-                            <h3>${event.title}</h3>
-                            <p class="event-description">${event.description || 'No description available'}</p>
-                            <div class="event-meta">
-                                <div class="event-location">
-                                    <i class="fas fa-map-marker-alt"></i> ${event.venue}
-                                </div>
-                                <div class="event-time">
-                                    <i class="far fa-clock"></i> 
-                                    ${formatTime(event.start_time)} - ${formatTime(event.end_time)}
-                                </div>
-                            </div>
-                            <a href="#" class="view-details">View Details →</a>
-                        </div>
-                    `;
+            <div class="event-image">
+                <img src="${imageUrl}" 
+                     alt="${event.title}"
+                     onerror="handleImageError(this)">
+                <div class="event-date">${formatDate(event.event_date)}</div>
+                <div class="event-tag">${event.category}</div>
+            </div>
+            <div class="event-details">
+                <h3>${event.title}</h3>
+                <p class="event-description">${event.description || 'No description available'}</p>
+                <div class="event-meta">
+                    <div class="event-location">
+                        <i class="fas fa-map-marker-alt"></i> ${event.venue}
+                    </div>
+                    <div class="event-time">
+                        <i class="far fa-clock"></i> 
+                        ${formatTime(event.start_time)} - ${formatTime(event.end_time)}
+                    </div>
+                </div>
+                <a href="event-details.html?id=${event.id}" class="view-details">View Details →</a>
+            </div>
+        `;
                     eventsContainer.appendChild(eventCard);
                 });
             }
@@ -225,9 +227,9 @@
                     // Get current user ID if logged in
                     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
                     const userId = currentUser ? currentUser.id : null;
-                    
+
                     // Add userId to query params if available
-                    const url = userId 
+                    const url = userId
                         ? CONFIG.getApiUrl(`events?userId=${userId}`)
                         : CONFIG.getApiUrl('events');
 

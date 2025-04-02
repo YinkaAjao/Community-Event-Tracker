@@ -7,7 +7,7 @@ const CONFIG = {
     api: {
         // Updated to use the correct port for the backend API
         baseUrl: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-            ? `http://${window.location.hostname}:5001` 
+            ? `http://${window.location.hostname}:5000` 
             : '',
         version: 'v1'
     },

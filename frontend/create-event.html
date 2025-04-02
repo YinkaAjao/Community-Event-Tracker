@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,18 +13,100 @@
             align-items: center;
             gap: 15px;
         }
+
         .user-welcome {
             display: flex;
             align-items: center;
             color: var(--text-color);
         }
+
         .user-welcome i {
             margin-right: 6px;
             color: var(--primary-color);
         }
+
+        .capacity-price-row {
+            display: flex;
+            gap: 20px;
+        }
+
+        .capacity-price-row .form-group {
+            flex: 1;
+        }
+
+        .organizer-section {
+            background-color: var(--background-color);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        #map {
+            height: 300px;
+            width: 100%;
+            margin-top: 10px;
+            border-radius: 8px;
+            background-color: #f5f5f5;
+        }
+
+        .map-error {
+            padding: 20px;
+            color: #721c24;
+            background-color: #f8d7da;
+            border-radius: 8px;
+            text-align: center;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .success-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            border-radius: 4px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .success-message i {
+            margin-right: 10px;
+        }
+
+        .file-input-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .file-input-label {
+            padding: 8px 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .form-hint {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .pac-container {
+            z-index: 1051 !important;
+        }
     </style>
     <script src="js/nav.js"></script>
 </head>
+
 <body>
     <header>
         <!-- Navigation will be inserted here by nav.js -->
@@ -37,6 +120,7 @@
             </div>
             <div class="event-form-container">
                 <form id="eventForm" enctype="multipart/form-data" class="event-form">
+                    <!-- Basic Event Information -->
                     <div class="form-group">
                         <label for="eventTitle">Event Title <span class="required">*</span></label>
                         <input type="text" id="eventTitle" name="eventTitle"
@@ -73,6 +157,7 @@
                         </div>
                     </div>
 
+                    <!-- Location Information -->
                     <div class="form-group">
                         <label for="venueName">Venue/Location Name <span class="required">*</span></label>
                         <input type="text" id="venueName" name="venueName"
@@ -80,25 +165,75 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="address">Address</label>
-                        <input type="text" id="address" name="address" placeholder="Street address, city, state, zip">
+                        <label for="address">Full Address <span class="required">*</span></label>
+                        <input type="text" id="address" name="address" placeholder="Street address, city, state, zip"
+                            required>
+                        <input type="hidden" id="latitude" name="latitude">
+                        <input type="hidden" id="longitude" name="longitude">
+                        <div id="map"></div>
                     </div>
 
+                    <!-- Event Details -->
                     <div class="form-group">
                         <label for="eventDescription">Event Description <span class="required">*</span></label>
                         <textarea id="eventDescription" rows="5" name="eventDescription"
                             placeholder="Provide details about your event..." required></textarea>
                     </div>
 
+                    <!-- Capacity and Pricing -->
+                    <div class="capacity-price-row form-row">
+                        <div class="form-group">
+                            <label for="eventCapacity">Capacity (optional)</label>
+                            <input type="number" id="eventCapacity" name="eventCapacity"
+                                placeholder="Maximum number of attendees">
+                        </div>
+                        <div class="form-group">
+                            <label for="eventPrice">Price (optional)</label>
+                            <select id="eventPrice" name="eventPrice">
+                                <option value="free" selected>Free</option>
+                                <option value="paid">Paid</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="priceAmountGroup" style="display: none;">
+                        <label for="priceAmount">Price Amount</label>
+                        <input type="number" id="priceAmount" name="priceAmount" placeholder="0.00" step="0.01" min="0">
+                    </div>
+
+                    <!-- Organizer Information -->
+                    <div class="organizer-section">
+                        <h3>Organizer Information</h3>
+                        <div class="form-group">
+                            <label for="organizerName">Organizer Name <span class="required">*</span></label>
+                            <input type="text" id="organizerName" name="organizerName"
+                                placeholder="Your name or organization name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="organizerDescription">Organizer Description</label>
+                            <textarea id="organizerDescription" rows="3" name="organizerDescription"
+                                placeholder="Tell attendees about yourself or your organization"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="organizerImage">Organizer Image</label>
+                            <div class="file-input-container">
+                                <input type="file" id="organizerImage" name="organizerImage" accept="image/*">
+                                <label for="organizerImage" class="file-input-label">Choose File</label>
+                                <span id="organizer-file-name">No file chosen</span>
+                            </div>
+                            <p class="form-hint">Upload a photo of yourself or your organization's logo.</p>
+                        </div>
+                    </div>
+
+                    <!-- Event Image -->
                     <div class="form-group">
-                        <label for="eventImage">Event Image</label>
+                        <label for="eventImage">Event Image <span class="required">*</span></label>
                         <div class="file-input-container">
-                            <input type="file" id="eventImage" name="eventImage" accept="image/*">
+                            <input type="file" id="eventImage" name="eventImage" accept="image/*" required>
                             <label for="eventImage" class="file-input-label">Choose File</label>
                             <span id="file-name">No file chosen</span>
                         </div>
-                        <p class="form-hint">Recommended: Upload a high-quality image that represents your event. JPG or
-                            PNG format, maximum 5MB.</p>
+                        <p class="form-hint">Recommended: Upload a high-quality image that represents your event. JPG or PNG format, maximum 5MB.</p>
                     </div>
 
                     <div class="form-actions">
@@ -136,8 +271,7 @@
                 <div class="footer-section">
                     <h4>Contact</h4>
                     <ul>
-                        <li><a href="mailto:contact@communityvibe.com"><i class="far fa-envelope"></i>
-                                contact@communityvibe.com</a></li>
+                        <li><a href="mailto:contact@communityvibe.com"><i class="far fa-envelope"></i> contact@communityvibe.com</a></li>
                         <li><a href="#"><i class="fas fa-map-marker-alt"></i> 123 Community St, City, State</a></li>
                     </ul>
                 </div>
@@ -151,94 +285,247 @@
     <script src="js/config.js"></script>
     <script src="js/toast.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Check if user is logged in
-            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-            
-            // If not logged in, redirect to login with return URL
-            if (!currentUser) {
-                window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
-                return;
-            }
-            
-            // Test server connection on page load
+        // Global variables for Google Maps
+        let map;
+        let marker;
+        let autocomplete;
+
+        function initMap() {
             try {
-                const response = await fetch(CONFIG.getApiUrl('health'));
-                if (!response.ok) {
-                    throw new Error('Server health check failed');
+                if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
+                    throw new Error("Google Maps API failed to load");
                 }
-            } catch (error) {
-                console.error('Server connection test failed:', error);
-                alert('Cannot connect to server. Please check your network and try again.');
-            }
-        });
 
-        // File input display
-        document.getElementById('eventImage').addEventListener('change', function () {
-            const fileName = this.files[0] ? this.files[0].name : 'No file chosen';
-            document.getElementById('file-name').textContent = fileName;
-            
-            // Preview image if browser supports it
-            if (this.files && this.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    // You could add an image preview here if needed
-                    console.log('Image loaded successfully');
-                };
-                reader.readAsDataURL(this.files[0]);
-            }
-        });
+                const mapElement = document.getElementById("map");
+                if (!mapElement) {
+                    throw new Error("Map container not found");
+                }
 
-        // Form submission
-        document.getElementById('eventForm').addEventListener('submit', async function (e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            const submitBtn = this.querySelector('button[type="submit"]');
-            const originalBtnText = submitBtn.textContent;
-
-            try {
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Creating...';
-                submitBtn.classList.add('loading');
-
-                const response = await fetch(CONFIG.getApiUrl('create-event'), {
-                    method: 'POST',
-                    body: formData
+                // Initialize map
+                map = new google.maps.Map(mapElement, {
+                    center: { lat: 0, lng: 0 },
+                    zoom: 2,
+                    gestureHandling: "cooperative",
+                    mapTypeControl: true,
+                    streetViewControl: false
                 });
 
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.message || `Server responded with status ${response.status}`);
-                }
+                // Initialize classic Autocomplete
+                const inputElement = document.getElementById("address");
+                autocomplete = new google.maps.places.Autocomplete(inputElement, {
+                    fields: ["formatted_address", "geometry", "name"],
+                    types: ["establishment", "geocode"]
+                });
 
-                const data = await response.json();
-                console.log('Server response:', data);
+                // Handle place selection
+                autocomplete.addListener('place_changed', () => {
+                    const place = autocomplete.getPlace();
+                    
+                    if (!place.geometry) {
+                        showMapError("Location not found. Please try another address.");
+                        return;
+                    }
 
-                if (data.success) {
-                    window.toast.show({
-                        title: 'Success!',
-                        message: `Event created successfully! ${data.notificationsCreated} users will be notified.`,
-                        type: 'success',
-                        duration: 3000
+                    if (place.geometry.viewport) {
+                        map.fitBounds(place.geometry.viewport);
+                    } else {
+                        map.setCenter(place.geometry.location);
+                        map.setZoom(17);
+                    }
+
+                    if (marker) {
+                        marker.setPosition(place.geometry.location);
+                    } else {
+                        marker = new google.maps.Marker({
+                            position: place.geometry.location,
+                            map: map,
+                            title: place.name
+                        });
+                    }
+
+                    document.getElementById("latitude").value = place.geometry.location.lat();
+                    document.getElementById("longitude").value = place.geometry.location.lng();
+                });
+
+                // Handle map clicks
+                map.addListener("click", (e) => {
+                    if (!marker) {
+                        marker = new google.maps.Marker({
+                            position: e.latLng,
+                            map: map,
+                            draggable: true
+                        });
+                    } else {
+                        marker.setPosition(e.latLng);
+                    }
+
+                    new google.maps.Geocoder().geocode({ location: e.latLng }, (results, status) => {
+                        if (status === "OK" && results[0]) {
+                            document.getElementById("address").value = results[0].formatted_address;
+                            document.getElementById("latitude").value = e.latLng.lat();
+                            document.getElementById("longitude").value = e.latLng.lng();
+                        } else {
+                            showMapError("Could not find address for this location.");
+                        }
                     });
-                    setTimeout(() => {
-                        window.location.href = 'events.html';
-                    }, 2000);
-                } else {
-                    throw new Error(data.message || 'Unknown error occurred');
-                }
-            } catch (error) {
-                console.error('Event creation error:', error);
-                window.toast.show({
-                    title: 'Error!',
-                    message: error.message,
-                    type: 'error',
-                    duration: 5000
                 });
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalBtnText;
-                submitBtn.classList.remove('loading');
+
+            } catch (error) {
+                console.error("Google Maps initialization error:", error);
+                showMapError(`Failed to load maps: ${error.message}`);
+            }
+        }
+
+        function showMapError(message) {
+            const mapElement = document.getElementById("map");
+            if (mapElement) {
+                mapElement.innerHTML = `
+                    <div class="map-error">
+                        <i class="fas fa-map-marked-alt"></i>
+                        <p>${message}</p>
+                        <button onclick="window.location.reload()">Try Again</button>
+                    </div>
+                `;
+            }
+        }
+
+        function showSuccessMessage(message) {
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success-message';
+            successDiv.innerHTML = `
+                <i class="fas fa-check-circle"></i>
+                <span>${message}</span>
+            `;
+            document.body.appendChild(successDiv);
+            
+            setTimeout(() => {
+                successDiv.remove();
+            }, 3000);
+        }
+
+        function gm_authFailure() {
+            showMapError(`
+                Google Maps failed to load. Possible issues:<br>
+                1. Invalid API key<br>
+                2. Missing billing setup<br>
+                3. Required APIs not enabled
+            `);
+        }
+
+        window.gm_authFailure = gm_authFailure;
+
+        function loadGoogleMaps() {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyAiv9xCoo-CoZ7xZn5u6t2huPdej0qzMCk&libraries=places&loading=async&callback=initMap`;
+                script.async = true;
+                script.defer = true;
+                script.onerror = () => {
+                    reject(new Error("Failed to load Google Maps API"));
+                };
+                document.head.appendChild(script);
+                script.onload = resolve;
+            });
+        }
+
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await loadGoogleMaps();
+
+                const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+                if (!currentUser) {
+                    window.location.href = "login.html?redirect=" + encodeURIComponent(window.location.href);
+                    return;
+                }
+
+                document.getElementById("organizerName").value = currentUser.username || "";
+
+                // Test server connection
+                try {
+                    const response = await fetch(CONFIG.getApiUrl("health"));
+                    if (!response.ok) {
+                        throw new Error("Server health check failed");
+                    }
+                } catch (error) {
+                    console.error("Server connection test failed:", error);
+                    alert("Cannot connect to server. Please check your network and try again.");
+                }
+
+                // Price toggle
+                document.getElementById("eventPrice").addEventListener("change", function () {
+                    const priceAmountGroup = document.getElementById("priceAmountGroup");
+                    priceAmountGroup.style.display = this.value === "paid" ? "block" : "none";
+                    if (this.value === "paid") {
+                        document.getElementById("priceAmount").setAttribute("required", "true");
+                    } else {
+                        document.getElementById("priceAmount").removeAttribute("required");
+                    }
+                });
+
+                // File input display
+                document.getElementById("eventImage").addEventListener("change", function () {
+                    const fileName = this.files[0] ? this.files[0].name : "No file chosen";
+                    document.getElementById("file-name").textContent = fileName;
+                });
+
+                document.getElementById("organizerImage").addEventListener("change", function () {
+                    const fileName = this.files[0] ? this.files[0].name : "No file chosen";
+                    document.getElementById("organizer-file-name").textContent = fileName;
+                });
+
+                // Form submission
+                document.getElementById("eventForm").addEventListener("submit", async function (e) {
+                    e.preventDefault();
+                    const formData = new FormData(this);
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    const originalBtnText = submitBtn.textContent;
+
+                    try {
+                        submitBtn.disabled = true;
+                        submitBtn.textContent = "Creating...";
+                        submitBtn.classList.add("loading");
+
+                        const response = await fetch(CONFIG.getApiUrl("create-event"), {
+                            method: "POST",
+                            body: formData
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json().catch(() => ({}));
+                            throw new Error(errorData.message || `Server responded with status ${response.status}`);
+                        }
+
+                        const data = await response.json();
+                        console.log("Server response:", data);
+
+                        if (data.success) {
+                            showSuccessMessage("Event created successfully!");
+                            
+                            setTimeout(() => {
+                                window.location.href = `event.html?id=${data.eventId}`;
+                            }, 2000);
+                        } else {
+                            throw new Error(data.message || "Unknown error occurred");
+                        }
+                    } catch (error) {
+                        console.error("Event creation error:", error);
+                        window.toast.show({
+                            title: "Error!",
+                            message: error.message,
+                            type: "error",
+                            duration: 5000
+                        });
+                    } finally {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalBtnText;
+                        submitBtn.classList.remove("loading");
+                    }
+                });
+
+            } catch (error) {
+                console.error("Initialization error:", error);
+                showMapError(error.message);
             }
         });
     </script>

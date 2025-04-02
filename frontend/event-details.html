@@ -1,13 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Event Details - CommunityVibe</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Add any additional styles here */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 0, 0, .1);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+    <script src="js/config.js"></script>
+    <script src="js/toast.js"></script>
     <script src="js/nav.js"></script>
+    <script src="js/event-details.js"></script>
 </head>
+
+<div id="toast-container"></div>
 <body>
     <header>
         <!-- Navigation will be inserted here by nav.js -->
@@ -17,33 +41,34 @@
         <section class="event-details-container">
             <div class="event-header">
                 <div class="event-breadcrumb">
-                    <a href="events.html">Events</a> <i class="fas fa-chevron-right"></i> <span>Event Details</span>
+                    <a href="events.html">Events</a> <i class="fas fa-chevron-right"></i> <span
+                        id="event-title-breadcrumb">Event Details</span>
                 </div>
                 <div class="event-header-content">
                     <div class="event-header-info">
                         <div class="event-tags">
-                            <span class="event-category">Workshop</span>
-                            <span class="event-status">Upcoming</span>
+                            <span class="event-category" id="event-category">Loading...</span>
+                            <span class="event-status" id="event-status">Loading...</span>
                         </div>
-                        <h1>Community Gardening Workshop</h1>
+                        <h1 id="event-title">Loading Event...</h1>
                         <div class="event-meta-large">
                             <div class="event-meta-item">
                                 <i class="far fa-calendar"></i>
-                                <span>July 15, 2023</span>
+                                <span id="event-date">Loading...</span>
                             </div>
                             <div class="event-meta-item">
                                 <i class="far fa-clock"></i>
-                                <span>10:00 AM - 12:00 PM</span>
+                                <span id="event-time">Loading...</span>
                             </div>
                             <div class="event-meta-item">
                                 <i class="fas fa-map-marker-alt"></i>
-                                <span>Downtown Community Center</span>
+                                <span id="event-venue">Loading...</span>
                             </div>
                         </div>
                     </div>
                     <div class="event-actions">
-                        <button class="btn primary-btn"><i class="far fa-calendar-plus"></i> RSVP</button>
-                        <button class="btn secondary-btn"><i class="fas fa-share-alt"></i> Share</button>
+                        <button class="btn primary-btn" id="rsvp-btn"><i class="far fa-calendar-plus"></i> RSVP</button>
+                        <button class="btn secondary-btn" id="share-btn"><i class="fas fa-share-alt"></i> Share</button>
                     </div>
                 </div>
             </div>
@@ -51,59 +76,44 @@
             <div class="event-content">
                 <div class="event-main">
                     <div class="event-image-large">
-                        <img src="images/events/gardening.jpg" alt="Community Gardening Workshop">
+                        <img id="event-image" src="" alt="Event image">
                     </div>
-                    
-                    <div class="event-description">
+
+                    <div class="event-description" id="event-description">
                         <h2>About This Event</h2>
-                        <p>Join us for a hands-on gardening workshop where you'll learn sustainable practices from local experts. This workshop is perfect for beginners and experienced gardeners alike who want to enhance their skills and learn about environmentally friendly gardening techniques.</p>
-                        
-                        <p>Our experienced instructors will guide you through:</p>
-                        <ul class="event-highlights">
-                            <li><i class="fas fa-leaf"></i> Soil preparation and maintenance</li>
-                            <li><i class="fas fa-seedling"></i> Planting techniques for various vegetables and herbs</li>
-                            <li><i class="fas fa-tint"></i> Water conservation methods</li>
-                            <li><i class="fas fa-bug"></i> Natural pest control solutions</li>
-                            <li><i class="fas fa-recycle"></i> Composting basics</li>
-                        </ul>
-                        
-                        <p>All materials and tools will be provided. Just bring your enthusiasm and be prepared to get your hands dirty! Each participant will take home a starter plant to begin their own garden.</p>
-                        
-                        <h3>Who Should Attend</h3>
-                        <p>This workshop is designed for community members of all ages and experience levels. Whether you have a large backyard garden or just a few pots on your balcony, you'll learn valuable tips to enhance your growing space.</p>
+                        <p>Loading event details...</p>
                     </div>
-                    
+
                     <div class="organizer-info">
                         <h2>Organizer</h2>
                         <div class="organizer-profile">
                             <div class="organizer-avatar">
-                                <img src="images/organizers/green-thumb.jpg" alt="Green Thumb Society">
+                                <img id="organizer-image" src="" alt="Organizer image">
                             </div>
                             <div class="organizer-details">
-                                <h3>Green Thumb Society</h3>
-                                <p>A local organization dedicated to promoting sustainable gardening practices and community engagement through nature.</p>
-                                <a href="#" class="organizer-link">View Profile</a>
+                                <h3 id="organizer-name">Loading...</h3>
+                                <p id="organizer-description">Loading organizer information...</p>
+                                <a href="#" class="organizer-link" id="organizer-link">View Profile</a>
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="location-details">
                         <h2>Location</h2>
                         <div class="location-address">
-                            <p><strong>Downtown Community Center</strong></p>
-                            <p>123 Main Street</p>
-                            <p>City, State 12345</p>
+                            <p><strong id="location-venue">Loading...</strong></p>
+                            <p id="location-address">Loading address...</p>
                         </div>
                         <div class="location-map">
                             <div class="map-placeholder">
-                                <!-- Map would be embedded here -->
-                                <div class="map-image"></div>
-                                <a href="#" class="btn secondary-btn map-btn"><i class="fas fa-directions"></i> Get Directions</a>
+                                <div class="map-image" id="map"></div>
+                                <a href="#" class="btn secondary-btn map-btn" id="directions-btn"><i
+                                        class="fas fa-directions"></i> Get Directions</a>
                             </div>
                         </div>
                     </div>
                 </div>
-                
+
                 <aside class="event-sidebar">
                     <div class="sidebar-card">
                         <h3>Event Details</h3>
@@ -112,78 +122,66 @@
                                 <i class="far fa-calendar"></i>
                                 <div>
                                     <span class="detail-label">Date</span>
-                                    <span class="detail-value">July 15, 2023</span>
+                                    <span class="detail-value" id="sidebar-date">Loading...</span>
                                 </div>
                             </li>
                             <li>
                                 <i class="far fa-clock"></i>
                                 <div>
                                     <span class="detail-label">Time</span>
-                                    <span class="detail-value">10:00 AM - 12:00 PM</span>
+                                    <span class="detail-value" id="sidebar-time">Loading...</span>
                                 </div>
                             </li>
                             <li>
                                 <i class="fas fa-map-marker-alt"></i>
                                 <div>
                                     <span class="detail-label">Location</span>
-                                    <span class="detail-value">Downtown Community Center</span>
+                                    <span class="detail-value" id="sidebar-location">Loading...</span>
                                 </div>
                             </li>
                             <li>
                                 <i class="fas fa-ticket-alt"></i>
                                 <div>
                                     <span class="detail-label">Price</span>
-                                    <span class="detail-value">Free</span>
+                                    <span class="detail-value" id="sidebar-price">Loading...</span>
                                 </div>
                             </li>
                             <li>
                                 <i class="fas fa-users"></i>
                                 <div>
                                     <span class="detail-label">Capacity</span>
-                                    <span class="detail-value">25 spots available</span>
+                                    <span class="detail-value" id="sidebar-capacity">Loading...</span>
                                 </div>
                             </li>
                         </ul>
-                        <button class="btn primary-btn btn-full"><i class="far fa-calendar-plus"></i> RSVP Now</button>
+                        <button class="btn primary-btn btn-full" id="sidebar-rsvp-btn"><i
+                                class="far fa-calendar-plus"></i> RSVP Now</button>
                     </div>
-                    
+
                     <div class="sidebar-card">
                         <h3>Share This Event</h3>
                         <div class="social-share">
-                            <a href="#" class="social-icon facebook"><i class="fab fa-facebook-f"></i></a>
-                            <a href="#" class="social-icon twitter"><i class="fab fa-twitter"></i></a>
-                            <a href="#" class="social-icon instagram"><i class="fab fa-instagram"></i></a>
-                            <a href="#" class="social-icon email"><i class="far fa-envelope"></i></a>
+                            <a href="#" class="social-icon facebook" id="facebook-share"><i
+                                    class="fab fa-facebook-f"></i></a>
+                            <a href="#" class="social-icon twitter" id="twitter-share"><i
+                                    class="fab fa-twitter"></i></a>
+                            <a href="#" class="social-icon instagram" id="instagram-share"><i
+                                    class="fab fa-instagram"></i></a>
+                            <a href="#" class="social-icon email" id="email-share"><i class="far fa-envelope"></i></a>
                         </div>
                     </div>
-                    
+
                     <div class="sidebar-card">
                         <h3>Similar Events</h3>
-                        <div class="similar-events">
-                            <a href="#" class="similar-event">
-                                <div class="similar-event-image">
-                                    <img src="images/events/cleanup.jpg" alt="Community Cleanup Day">
-                                </div>
-                                <div class="similar-event-info">
-                                    <h4>Community Cleanup Day</h4>
-                                    <p>July 22, 2023</p>
-                                </div>
-                            </a>
-                            <a href="#" class="similar-event">
-                                <div class="similar-event-image">
-                                    <img src="images/events/market.jpg" alt="Farmers Market">
-                                </div>
-                                <div class="similar-event-info">
-                                    <h4>Farmers Market</h4>
-                                    <p>Every Saturday</p>
-                                </div>
-                            </a>
+                        <div class="similar-events" id="similar-events">
+                            <!-- Similar events will be loaded dynamically -->
+                            <p>Loading similar events...</p>
                         </div>
                     </div>
                 </aside>
             </div>
         </section>
-        
+
         <section class="event-share">
             <div class="event-share-content">
                 <h2>Have an event to share?</h2>
@@ -192,6 +190,227 @@
             </div>
         </section>
     </main>
+
+    <script>
+        // Helper functions
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            return new Date(dateString).toLocaleDateString(undefined, options);
+        }
+
+        function formatTime(timeString) {
+            if (!timeString) return '';
+            return new Date(`1970-01-01T${timeString}`).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Initialize Google Maps
+        function initMap(lat, lng, title) {
+            try {
+                if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
+                    throw new Error("Google Maps API not loaded");
+                }
+
+                const mapElement = document.getElementById("map");
+                if (!mapElement) return;
+
+                const map = new google.maps.Map(mapElement, {
+                    center: { lat: parseFloat(lat), lng: parseFloat(lng) },
+                    zoom: 15
+                });
+
+                new google.maps.Marker({
+                    position: { lat: parseFloat(lat), lng: parseFloat(lng) },
+                    map: map,
+                    title: title
+                });
+
+            } catch (error) {
+                console.error("Map initialization error:", error);
+                document.getElementById("map").innerHTML = `
+                    <div class="map-error">
+                        <i class="fas fa-map-marked-alt"></i>
+                        <p>Could not load map</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Load Google Maps API
+        function loadGoogleMaps() {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAiv9xCoo-CoZ7xZn5u6t2huPdej0qzMCk&libraries=places&loading=async&callback=initMap" async defer
+                script.async = true;
+                script.defer = true;
+                script.onerror = () => reject(new Error("Failed to load Google Maps API"));
+                document.head.appendChild(script);
+                script.onload = resolve;
+            });
+        }
+
+        // Main function to load event details
+        async function loadEventDetails() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const eventId = urlParams.get('id');
+
+            if (!eventId) {
+                window.location.href = 'events.html';
+                return;
+            }
+
+            // Show loading state
+            document.querySelectorAll('[id^="event-"], [id^="sidebar-"]').forEach(el => {
+                if (el.tagName === 'IMG') {
+                    el.src = '';
+                    el.alt = 'Loading...';
+                } else {
+                    el.innerHTML = `<span class="loading-spinner"></span> Loading...`;
+                }
+            });
+
+            try {
+                // Load Google Maps first
+                await loadGoogleMaps();
+
+                // Fetch event details
+                const response = await fetch(`${CONFIG.getApiUrl('events')}/${eventId}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('Event data:', data); // Debug log
+
+                if (!data.success || !data.data) {
+                    throw new Error(data.message || 'Invalid event data');
+                }
+
+                const event = data.data;
+
+                // Update basic info
+                document.getElementById('event-title').textContent = event.title;
+                document.getElementById('event-title-breadcrumb').textContent = event.title;
+                document.getElementById('event-category').textContent = event.category;
+                document.getElementById('event-date').textContent = formatDate(event.event_date);
+                document.getElementById('event-time').textContent = `${formatTime(event.start_time)} - ${formatTime(event.end_time)}`;
+                document.getElementById('event-venue').textContent = event.venue;
+
+                // Update images
+                document.getElementById('event-image').src = event.image
+                    ? `${CONFIG.getUploadsUrl()}/${event.image}`
+                    : `${CONFIG.getUploadsUrl()}/default.jpg`;
+                document.getElementById('event-image').alt = event.title;
+
+                document.getElementById('organizer-image').src = event.organizer_image
+                    ? `${CONFIG.getUploadsUrl()}/${event.organizer_image}`
+                    : `${CONFIG.getUploadsUrl()}/default.jpg`;
+
+                // Update organizer info
+                document.getElementById('organizer-name').textContent = event.organizer_name;
+                document.getElementById('organizer-description').textContent = event.organizer_description || 'No description available';
+                document.getElementById('organizer-link').href = `organizer.html?id=${event.organizer_id || ''}`;
+
+                // Update location info
+                document.getElementById('location-venue').textContent = event.venue;
+                document.getElementById('location-address').textContent = event.address || 'Address not specified';
+
+                // Update sidebar details
+                document.getElementById('sidebar-date').textContent = formatDate(event.event_date);
+                document.getElementById('sidebar-time').textContent = `${formatTime(event.start_time)} - ${formatTime(event.end_time)}`;
+                document.getElementById('sidebar-location').textContent = event.venue;
+                document.getElementById('sidebar-price').textContent =
+                    event.price_type === 'paid' && event.price_amount
+                        ? `$${parseFloat(event.price_amount).toFixed(2)}`
+                        : 'Free';
+                document.getElementById('sidebar-capacity').textContent =
+                    event.capacity ? `${event.capacity} spots available` : 'Unlimited capacity';
+
+                // Initialize map if coordinates exist
+                if (event.latitude && event.longitude) {
+                    initMap(event.latitude, event.longitude, event.venue);
+                    document.getElementById('directions-btn').href =
+                        `https://www.google.com/maps/dir/?api=1&destination=${event.latitude},${event.longitude}`;
+                }
+
+                // Load similar events
+                loadSimilarEvents(event.category, event.id);
+
+            } catch (error) {
+                console.error('Error loading event details:', error);
+                window.toast.show({
+                    title: 'Error!',
+                    message: 'Failed to load event details',
+                    type: 'error',
+                    duration: 5000
+                });
+
+                // Show error state
+                document.getElementById('event-title').textContent = 'Error Loading Event';
+                document.getElementById('event-description').querySelector('p').textContent =
+                    'Could not load event details. Please try again later.';
+            }
+        }
+
+        // Load similar events
+        async function loadSimilarEvents(category, currentEventId) {
+            try {
+                const response = await fetch(`${CONFIG.getApiUrl('events')}/similar/${category}/${currentEventId}`);
+                if (!response.ok) throw new Error('Failed to load similar events');
+
+                const data = await response.json();
+                const container = document.getElementById('similar-events');
+                container.innerHTML = '';
+
+                if (!data.data || data.data.length === 0) {
+                    container.innerHTML = '<p>No similar events found</p>';
+                    return;
+                }
+
+                data.data.forEach(event => {
+                    const eventElement = document.createElement('a');
+                    eventElement.className = 'similar-event';
+                    eventElement.href = `event.html?id=${event.id}`;
+
+                    const imageUrl = event.image
+                        ? `${CONFIG.getUploadsUrl()}/${event.image}`
+                        : `${CONFIG.getUploadsUrl()}/default.jpg`;
+
+                    eventElement.innerHTML = `
+                        <div class="similar-event-image">
+                            <img src="${imageUrl}" alt="${event.title}">
+                        </div>
+                        <div class="similar-event-info">
+                            <h4>${event.title}</h4>
+                            <p>${formatDate(event.event_date)}</p>
+                        </div>
+                    `;
+
+                    container.appendChild(eventElement);
+                });
+            } catch (error) {
+                console.error('Error loading similar events:', error);
+                document.getElementById('similar-events').innerHTML =
+                    '<p>Error loading similar events</p>';
+            }
+        }
+
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', loadEventDetails);
+    </script>
+
+    <!-- Load Google Maps API with callback -->
+    <script>
+        // This global function will be called by Google Maps API
+        window.initMap = function () {
+            // The actual initialization happens in loadEventDetails()
+            console.log('Google Maps API loaded');
+        };
+    </script>
 
     <footer>
         <div class="footer-content">
@@ -218,7 +437,8 @@
                 <div class="footer-section">
                     <h4>Contact</h4>
                     <ul>
-                        <li><a href="mailto:contact@communityvibe.com"><i class="far fa-envelope"></i> contact@communityvibe.com</a></li>
+                        <li><a href="mailto:contact@communityvibe.com"><i class="far fa-envelope"></i>
+                                contact@communityvibe.com</a></li>
                         <li><a href="#"><i class="fas fa-map-marker-alt"></i> 123 Community St, City, State</a></li>
                     </ul>
                 </div>
@@ -228,7 +448,6 @@
             <p>&copy; 2025 CommunityVibe. All rights reserved.</p>
         </div>
     </footer>
-    <script src="js/config.js"></script>
-    <script src="js/main.js"></script>
 </body>
+
 </html>

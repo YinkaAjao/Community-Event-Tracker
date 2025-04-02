@@ -81,7 +81,7 @@ async function verifyDatabaseConnection() {
     }
 }
 
-// Ensure the `events` table exists
+// Ensure tables exist
 async function ensureEventsTableExists() {
     try {
         const createTableQuery = `
@@ -96,6 +96,14 @@ async function ensureEventsTableExists() {
                 address VARCHAR(255),
                 description TEXT NOT NULL,
                 image VARCHAR(255) DEFAULT 'default.jpg',
+                latitude DECIMAL(10, 8),
+                longitude DECIMAL(11, 8),
+                capacity INT,
+                price_type ENUM('free', 'paid') DEFAULT 'free',
+                price_amount DECIMAL(10,2),
+                organizer_name VARCHAR(255),
+                organizer_description TEXT,
+                organizer_image VARCHAR(255),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `;
@@ -107,7 +115,6 @@ async function ensureEventsTableExists() {
     }
 }
 
-// Ensure the `users` table exists
 async function ensureUsersTableExists() {
     try {
         const createTableQuery = `
@@ -127,7 +134,6 @@ async function ensureUsersTableExists() {
     }
 }
 
-// Ensure the `user_categories` table exists
 async function ensureUserCategoriesTableExists() {
     try {
         const createTableQuery = `
@@ -148,10 +154,8 @@ async function ensureUserCategoriesTableExists() {
     }
 }
 
-// Ensure the `notifications` table exists
 async function ensureNotificationsTableExists() {
     try {
-        // Create the table only if it doesn't exist
         const createTableQuery = `
             CREATE TABLE IF NOT EXISTS notifications (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -175,12 +179,11 @@ async function ensureNotificationsTableExists() {
 // Initialize database
 async function initializeDatabase() {
     await verifyDatabaseConnection();
-    await ensureEventsTableExists();
     await ensureUsersTableExists();
     await ensureUserCategoriesTableExists();
+    await ensureEventsTableExists();
     await ensureNotificationsTableExists();
 }
-
 initializeDatabase();
 
 // Configure Multer for file uploads
@@ -191,7 +194,8 @@ const storage = multer.diskStorage({
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         const ext = path.extname(file.originalname).toLowerCase();
-        cb(null, 'event-' + uniqueSuffix + ext);
+        const prefix = file.fieldname === 'organizerImage' ? 'organizer-' : 'event-';
+        cb(null, prefix + uniqueSuffix + ext);
     }
 });
 
@@ -206,19 +210,21 @@ const upload = multer({
     storage: storage,
     limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: fileFilter
-});
+}).fields([
+    { name: 'eventImage', maxCount: 1 },
+    { name: 'organizerImage', maxCount: 1 }
+]);
 
-// Create Event Route
-app.post("/create-event", upload.single('eventImage'), async (req, res) => {
+// Routes
+app.post("/create-event", upload, async (req, res) => {
     let connection;
-    let uploadedFile;
+    let uploadedFiles = [];
 
     try {
-        uploadedFile = req.file;
+        uploadedFiles = [req.files['eventImage']?.[0], req.files['organizerImage']?.[0]].filter(Boolean);
         connection = await db.getConnection();
         await connection.beginTransaction();
 
-        // Get request body data
         const {
             eventTitle: title,
             eventCategory: category,
@@ -227,23 +233,39 @@ app.post("/create-event", upload.single('eventImage'), async (req, res) => {
             endTime,
             venueName: venue,
             address,
-            eventDescription: description
+            eventDescription: description,
+            eventCapacity: capacity,
+            eventPriceType: price_type,
+            priceAmount: price_amount,
+            organizerName: organizer_name,
+            organizerDescription: organizer_description,
+            latitude,
+            longitude
         } = req.body;
 
-        // Validate required fields
-        if (!title || !category || !eventDate || !startTime || !venue || !description) {
+        if (!title || !category || !eventDate || !startTime || !venue || !description || !organizer_name) {
             throw new Error("All required fields must be provided");
         }
 
-        // 1. Create the event
+        const event_image = req.files['eventImage']?.[0]?.filename || "default.jpg";
+        const organizer_image = req.files['organizerImage']?.[0]?.filename || null;
+
         const [eventResult] = await connection.query(
             `INSERT INTO events 
-            (title, category, event_date, start_time, end_time, venue, address, description, image) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [title, category, eventDate, startTime, endTime, venue, address, description, req.file?.filename || "default.jpg"]
+            (title, category, event_date, start_time, end_time, venue, address, 
+             description, image, latitude, longitude, capacity, price_type, 
+             price_amount, organizer_name, organizer_description, organizer_image) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                title, category, eventDate, startTime, endTime, venue, address,
+                description, event_image, latitude, longitude, capacity || null,
+                price_type || 'free', price_amount || null, organizer_name,
+                organizer_description || null, organizer_image
+            ]
         );
 
-        // 2. Find users who are interested in this category
+        // Notification logic
+        let notificationCount = 0;
         const [interestedUsers] = await connection.query(
             `SELECT DISTINCT u.id, u.username, u.email
              FROM users u 
@@ -252,8 +274,6 @@ app.post("/create-event", upload.single('eventImage'), async (req, res) => {
             [category]
         );
 
-        // 3. Create notifications for interested users
-        let notificationCount = 0;
         if (interestedUsers.length > 0) {
             const notificationValues = interestedUsers.map(user => [
                 user.id,
@@ -270,9 +290,7 @@ app.post("/create-event", upload.single('eventImage'), async (req, res) => {
                 VALUES ?`,
                 [notificationValues]
             );
-
             notificationCount = notificationResult.affectedRows;
-            console.log(`✅ Created ${notificationCount} notifications for ${category} event`);
         }
 
         await connection.commit();
@@ -286,12 +304,11 @@ app.post("/create-event", upload.single('eventImage'), async (req, res) => {
 
     } catch (error) {
         if (connection) await connection.rollback();
-        
-        // Clean up uploaded file if there was an error
-        if (uploadedFile && fs.existsSync(path.join(uploadsDir, uploadedFile.filename))) {
-            fs.unlinkSync(path.join(uploadsDir, uploadedFile.filename));
-        }
-
+        uploadedFiles.forEach(file => {
+            if (file && fs.existsSync(path.join(uploadsDir, file.filename))) {
+                fs.unlinkSync(path.join(uploadsDir, file.filename));
+            }
+        });
         console.error('Error creating event:', error);
         res.status(500).json({
             success: false,
@@ -302,24 +319,49 @@ app.post("/create-event", upload.single('eventImage'), async (req, res) => {
     }
 });
 
-// Fetch Events Route
 app.get("/events", async (req, res) => {
     try {
         const userId = req.query.userId;
         let userCategories = [];
 
-        // If userId provided, get their interests
         if (userId) {
             const [categories] = await db.query(
                 "SELECT category FROM user_categories WHERE user_id = ?",
-                [userId]  
+                [userId]
             );
             userCategories = categories.map(c => c.category);
         }
 
-        // Modify query based on whether user has any categories
         const query = `
             SELECT 
+                id,
+                title,
+                category,
+                DATE_FORMAT(event_date, '%Y-%m-%d') as event_date,
+                TIME_FORMAT(start_time, '%H:%i') as start_time,
+                TIME_FORMAT(end_time, '%H:%i') as end_time,
+                venue,
+                image,
+                ${userCategories.length > 0 ? 
+                 `CASE WHEN category IN (${userCategories.map(() => '?').join(',')}) THEN 1 ELSE 0 END` 
+                 : '0'} as interest_match
+            FROM events 
+            ORDER BY interest_match DESC, event_date ASC
+        `;
+
+        const [results] = await db.query(query, userCategories);
+        res.json({ success: true, data: results });
+    } catch (error) {
+        console.error('Error fetching events:', error);
+        res.status(500).json({ success: false, message: "Failed to fetch events" });
+    }
+});
+
+app.get("/event/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [results] = await db.query(
+            `SELECT 
                 id,
                 title,
                 category,
@@ -330,30 +372,48 @@ app.get("/events", async (req, res) => {
                 address,
                 description,
                 image,
-                created_at,
-                ${userCategories.length > 0 ? 
-                    `CASE 
-                        WHEN category IN (${userCategories.map(() => '?').join(',')}) THEN 1 
-                        ELSE 0 
-                    END`
-                    : '0'
-                } as interest_match
+                latitude,
+                longitude,
+                capacity,
+                price_type,
+                price_amount,
+                organizer_name,
+                organizer_description,
+                organizer_image,
+                created_at
             FROM events 
-            ORDER BY interest_match DESC, event_date ASC
-        `;
-        
-        const [results] = await db.query(query, userCategories);
-        
-        res.json({
-            success: true,
-            data: results
-        });
+            WHERE id = ?`,
+            [id]
+        );
+
+        if (results.length === 0) {
+            return res.status(404).json({ success: false, message: "Event not found" });
+        }
+
+        const event = results[0];
+        event.formatted_price = event.price_type === 'paid' && event.price_amount ? 
+            `$${parseFloat(event.price_amount).toFixed(2)}` : 'Free';
+        event.formatted_capacity = event.capacity ? `${event.capacity} spots available` : 'Unlimited capacity';
+
+        res.json({ success: true, data: event });
     } catch (error) {
-        console.error('Error fetching events:', error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to fetch events"
-        });
+        console.error('Error fetching event:', error);
+        res.status(500).json({ success: false, message: "Failed to fetch event" });
+    }
+});
+
+app.get("/events/similar/:category/:currentEventId", async (req, res) => {
+    try {
+        const { category, currentEventId } = req.params;
+        const [results] = await db.query(
+            `SELECT id, title, DATE_FORMAT(event_date, '%Y-%m-%d') as event_date, image
+             FROM events WHERE category = ? AND id != ? ORDER BY event_date ASC LIMIT 2`,
+            [category, currentEventId]
+        );
+        res.json({ success: true, data: results });
+    } catch (error) {
+        console.error('Error fetching similar events:', error);
+        res.status(500).json({ success: false, message: "Failed to fetch similar events" });
     }
 });
 
@@ -384,7 +444,7 @@ app.post("/login", async (req, res) => {
         }
 
         const user = users[0];
-        
+
         // In a real app, you would hash and compare the password here
         // For demo purposes, we'll do a simple comparison (NOT RECOMMENDED for production)
         if (password !== user.password) {
@@ -393,14 +453,14 @@ app.post("/login", async (req, res) => {
                 message: "Invalid email or password"
             });
         }
-        
+
         // Create a safe user object (without password)
         const safeUser = {
             id: user.id,
             username: user.username,
             email: user.email
         };
-        
+
         res.status(200).json({
             success: true,
             message: "Login successful",
@@ -411,7 +471,7 @@ app.post("/login", async (req, res) => {
             message: error.message,
             stack: error.stack
         });
-        
+
         res.status(500).json({
             success: false,
             message: "Failed to log in",
@@ -432,7 +492,7 @@ app.post("/register", async (req, res) => {
                 message: "Username, email, and password are required"
             });
         }
-        
+
         // Simple email validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
@@ -457,7 +517,7 @@ app.post("/register", async (req, res) => {
 
         // In a real app, you would hash the password here
         // For demo purposes, we'll store it as is (NOT RECOMMENDED for production)
-        
+
         // Create the user
         const [result] = await db.query(
             "INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
@@ -488,7 +548,7 @@ app.post("/register", async (req, res) => {
 app.post("/user-categories", async (req, res) => {
     try {
         const { userId, categories } = req.body;
-        
+
         if (!userId || !Array.isArray(categories)) {
             return res.status(400).json({
                 success: false,
@@ -551,7 +611,7 @@ app.get("/notifications/:userId", async (req, res) => {
             "SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50",
             [userId]
         );
-        
+
         res.json({
             success: true,
             notifications
@@ -573,7 +633,7 @@ app.put("/notifications/:notificationId/read", async (req, res) => {
             "UPDATE notifications SET `read` = TRUE WHERE id = ?",
             [notificationId]
         );
-        
+
         res.json({
             success: true,
             message: "Notification marked as read"
@@ -586,7 +646,6 @@ app.put("/notifications/:notificationId/read", async (req, res) => {
         });
     }
 });
-
 // Health check endpoint
 app.get('/health', (req, res) => {
     res.json({
@@ -599,14 +658,7 @@ app.get('/health', (req, res) => {
 
 // Global error handler
 app.use((err, req, res, next) => {
-    console.error('Global error handler:', {
-        message: err.message,
-        stack: err.stack,
-        url: req.originalUrl,
-        body: req.body,
-        file: req.file
-    });
-
+    console.error('Global error handler:', err);
     res.status(500).json({
         success: false,
         message: 'Something went wrong!',

@@ -1,15 +1,22 @@
 class Toast {
     constructor() {
-        this.init();
+        // Wait for DOM to be ready before initializing
+        if (document.readyState === 'complete') {
+            this.init();
+        } else {
+            document.addEventListener('DOMContentLoaded', () => this.init());
+        }
     }
 
     init() {
-        // Create toast container if it doesn't exist
-        if (!document.querySelector('.toast-container')) {
-            const container = document.createElement('div');
+        // Create container only if it doesn't exist
+        let container = document.querySelector('.toast-container');
+        if (!container) {
+            container = document.createElement('div');
             container.className = 'toast-container';
             document.body.appendChild(container);
         }
+        this.container = container;
     }
 
     show(options) {
@@ -53,5 +60,7 @@ class Toast {
     }
 }
 
-// Initialize globally
-window.toast = new Toast();
+// Initialize only after DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    window.toast = new Toast();
+});
