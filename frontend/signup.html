@@ -6,6 +6,30 @@
     <title>Sign Up - CommunityVibe</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .error-feedback {
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        .form-loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.7s linear infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -28,24 +52,32 @@
             <div class="auth-form-container">
                 <h1>Create your account</h1>
                 <p class="auth-subtitle">Or <a href="login.html">sign in to your existing account</a></p>
+                <div id="registration-message" style="display: none; padding: 10px; margin-bottom: 15px; border-radius: 4px;"></div>
                 <form id="signupForm" class="auth-form">
                     <div class="form-group">
                         <label for="username">Username</label>
                         <input type="text" id="username" name="username" required>
+                        <div class="error-feedback" id="username-error"></div>
                     </div>
                     <div class="form-group">
                         <label for="email">Email Address</label>
                         <input type="email" id="email" name="email" required>
+                        <div class="error-feedback" id="email-error"></div>
                     </div>
                     <div class="form-group">
                         <label for="password">Password</label>
                         <input type="password" id="password" name="password" required>
+                        <div class="error-feedback" id="password-error"></div>
                     </div>
                     <div class="form-group">
                         <label for="confirmPassword">Confirm Password</label>
                         <input type="password" id="confirmPassword" name="confirmPassword" required>
+                        <div class="error-feedback" id="confirm-password-error"></div>
                     </div>
-                    <button type="submit" class="btn primary-btn btn-full">Register</button>
+                    <button type="submit" class="btn primary-btn btn-full">
+                        Register
+                        <span id="loading-spinner" class="loading-spinner"></span>
+                    </button>
                 </form>
             </div>
         </section>
@@ -86,7 +118,106 @@
             <p>&copy; 2025 CommunityVibe. All rights reserved.</p>
         </div>
     </footer>
+
+    <script src="js/config.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const signupForm = document.getElementById('signupForm');
+            const messageDiv = document.getElementById('registration-message');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            
+            function showError(fieldId, message) {
+                const errorElement = document.getElementById(fieldId + '-error');
+                if (errorElement) {
+                    errorElement.textContent = message;
+                }
+            }
+            
+            function clearErrors() {
+                const errorElements = document.querySelectorAll('.error-feedback');
+                errorElements.forEach(el => el.textContent = '');
+            }
+            
+            function showMessage(message, isSuccess) {
+                messageDiv.textContent = message;
+                messageDiv.style.display = 'block';
+                messageDiv.style.backgroundColor = isSuccess ? '#d4edda' : '#f8d7da';
+                messageDiv.style.color = isSuccess ? '#155724' : '#721c24';
+            }
+            
+            if (signupForm) {
+                signupForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    clearErrors();
+                    
+                    // Get form values
+                    const username = document.getElementById('username').value.trim();
+                    const email = document.getElementById('email').value.trim();
+                    const password = document.getElementById('password').value;
+                    const confirmPassword = document.getElementById('confirmPassword').value;
+                    
+                    // Simple validation
+                    let isValid = true;
+                    
+                    if (username.length < 3) {
+                        showError('username', 'Username must be at least 3 characters long');
+                        isValid = false;
+                    }
+                    
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(email)) {
+                        showError('email', 'Please enter a valid email address');
+                        isValid = false;
+                    }
+                    
+                    if (password.length < 6) {
+                        showError('password', 'Password must be at least 6 characters long');
+                        isValid = false;
+                    }
+                    
+                    if (password !== confirmPassword) {
+                        showError('confirm-password', 'Passwords do not match');
+                        isValid = false;
+                    }
+                    
+                    if (!isValid) {
+                        return;
+                    }
+                    
+                    // Show loading state
+                    loadingSpinner.style.display = 'inline-block';
+                    signupForm.classList.add('form-loading');
+                    
+                    try {
+                        const response = await fetch(CONFIG.getApiUrl('register'), {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ username, email, password })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (response.ok && data.success) {
+                            showMessage('Registration successful! Redirecting to login page...', true);
+                            setTimeout(() => {
+                                window.location.href = 'login.html';
+                            }, 2000);
+                        } else {
+                            showMessage(data.message || 'Registration failed. Please try again.', false);
+                        }
+                    } catch (error) {
+                        console.error('Registration error:', error);
+                        showMessage('An error occurred. Please try again later.', false);
+                    } finally {
+                        loadingSpinner.style.display = 'none';
+                        signupForm.classList.remove('form-loading');
+                    }
+                });
+            }
+        });
+    </script>
     <script src="js/main.js"></script>
-    <script src="js/form-validation.js"></script>
 </body>
 </html>

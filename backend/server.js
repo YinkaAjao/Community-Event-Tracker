@@ -127,11 +127,58 @@ async function ensureUsersTableExists() {
     }
 }
 
+// Ensure the `user_categories` table exists
+async function ensureUserCategoriesTableExists() {
+    try {
+        const createTableQuery = `
+            CREATE TABLE IF NOT EXISTS user_categories (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                category VARCHAR(100) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                UNIQUE KEY unique_user_category (user_id, category)
+            );
+        `;
+        await db.query(createTableQuery);
+        console.log("✅ Ensured `user_categories` table exists.");
+    } catch (err) {
+        console.error("❌ Failed to ensure `user_categories` table exists:", err.message);
+        process.exit(1);
+    }
+}
+
+// Ensure the `notifications` table exists
+async function ensureNotificationsTableExists() {
+    try {
+        // Create the table only if it doesn't exist
+        const createTableQuery = `
+            CREATE TABLE IF NOT EXISTS notifications (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                message TEXT NOT NULL,
+                category VARCHAR(100) NOT NULL,
+                \`read\` BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        `;
+        await db.query(createTableQuery);
+        console.log("✅ Ensured notifications table exists.");
+    } catch (err) {
+        console.error("❌ Failed to ensure notifications table exists:", err.message);
+        process.exit(1);
+    }
+}
+
 // Initialize database
 async function initializeDatabase() {
     await verifyDatabaseConnection();
     await ensureEventsTableExists();
     await ensureUsersTableExists();
+    await ensureUserCategoriesTableExists();
+    await ensureNotificationsTableExists();
 }
 
 initializeDatabase();
@@ -159,84 +206,119 @@ const upload = multer({
     storage: storage,
     limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: fileFilter
-}).single("eventImage");
+});
 
 // Create Event Route
-app.post("/create-event", (req, res) => {
-    upload(req, res, async (err) => {
-        let uploadedFile = null;
-        
-        try {
-            // Handle upload errors
-            if (err) {
-                if (err instanceof multer.MulterError) {
-                    throw new Error(`File upload error: ${err.message}`);
-                } else {
-                    throw err;
-                }
-            }
+app.post("/create-event", upload.single('eventImage'), async (req, res) => {
+    let connection;
+    let uploadedFile;
 
-            uploadedFile = req.file;
-            
-            // Validate input
-            const {
-                eventTitle: title,
-                eventCategory: category,
-                eventDate,
-                startTime,
-                endTime,
-                venueName: venue,
-                address,
-                eventDescription: description
-            } = req.body;
-            
-            if (!title || !category || !eventDate || !startTime || !venue || !description) {
-                throw new Error("All required fields must be provided");
-            }
-            
-            // Create the event
-            const [result] = await db.query(
-                `INSERT INTO events 
-                (title, category, event_date, start_time, end_time, venue, address, description, image) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [title, category, eventDate, startTime, endTime, venue, address, description, req.file?.filename || "default.jpg"]
-            );
-            
-            // Successful response
-            res.status(201).json({
-                success: true,
-                message: "Event created successfully",
-                eventId: result.insertId,
-                imageUrl: req.file ? `/uploads/${req.file.filename}` : '/uploads/default.jpg'
-            });
-            
-        } catch (error) {
-            // Clean up uploaded file if there was an error
-            if (uploadedFile && fs.existsSync(path.join(uploadsDir, uploadedFile.filename))) {
-                fs.unlinkSync(path.join(uploadsDir, uploadedFile.filename));
-            }
-            
-            console.error('Error in create-event:', {
-                message: error.message,
-                stack: error.stack,
-                body: req.body,
-                file: req.file
-            });
+    try {
+        uploadedFile = req.file;
+        connection = await db.getConnection();
+        await connection.beginTransaction();
 
-            const statusCode = error.message.includes("required fields") ? 400 : 500;
-            res.status(statusCode).json({
-                success: false,
-                message: error.message,
-                error: process.env.NODE_ENV === 'development' ? error.stack : undefined
-            });
+        // Get request body data
+        const {
+            eventTitle: title,
+            eventCategory: category,
+            eventDate,
+            startTime,
+            endTime,
+            venueName: venue,
+            address,
+            eventDescription: description
+        } = req.body;
+
+        // Validate required fields
+        if (!title || !category || !eventDate || !startTime || !venue || !description) {
+            throw new Error("All required fields must be provided");
         }
-    });
+
+        // 1. Create the event
+        const [eventResult] = await connection.query(
+            `INSERT INTO events 
+            (title, category, event_date, start_time, end_time, venue, address, description, image) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [title, category, eventDate, startTime, endTime, venue, address, description, req.file?.filename || "default.jpg"]
+        );
+
+        // 2. Find users who are interested in this category
+        const [interestedUsers] = await connection.query(
+            `SELECT DISTINCT u.id, u.username, u.email
+             FROM users u 
+             INNER JOIN user_categories uc ON u.id = uc.user_id 
+             WHERE LOWER(uc.category) = LOWER(?)`,
+            [category]
+        );
+
+        // 3. Create notifications for interested users
+        let notificationCount = 0;
+        if (interestedUsers.length > 0) {
+            const notificationValues = interestedUsers.map(user => [
+                user.id,
+                `New ${category} Event`,
+                `A new event "${title}" has been added that matches your interests.`,
+                category,
+                false,
+                new Date()
+            ]);
+
+            const [notificationResult] = await connection.query(
+                `INSERT INTO notifications 
+                (user_id, title, message, category, \`read\`, created_at) 
+                VALUES ?`,
+                [notificationValues]
+            );
+
+            notificationCount = notificationResult.affectedRows;
+            console.log(`✅ Created ${notificationCount} notifications for ${category} event`);
+        }
+
+        await connection.commit();
+
+        res.status(201).json({
+            success: true,
+            message: "Event created successfully",
+            eventId: eventResult.insertId,
+            notificationsCreated: notificationCount
+        });
+
+    } catch (error) {
+        if (connection) await connection.rollback();
+        
+        // Clean up uploaded file if there was an error
+        if (uploadedFile && fs.existsSync(path.join(uploadsDir, uploadedFile.filename))) {
+            fs.unlinkSync(path.join(uploadsDir, uploadedFile.filename));
+        }
+
+        console.error('Error creating event:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    } finally {
+        if (connection) connection.release();
+    }
 });
 
 // Fetch Events Route
 app.get("/events", async (req, res) => {
     try {
-        const [results] = await db.query(`
+        const userId = req.query.userId;
+        let userCategories = [];
+
+        // If userId provided, get their interests
+        if (userId) {
+            const [categories] = await db.query(
+                "SELECT category FROM user_categories WHERE user_id = ?",
+                [userId]  
+            );
+            userCategories = categories.map(c => c.category);
+        }
+
+        // Modify query based on whether user has any categories
+        const query = `
             SELECT 
                 id,
                 title,
@@ -248,10 +330,19 @@ app.get("/events", async (req, res) => {
                 address,
                 description,
                 image,
-                created_at
+                created_at,
+                ${userCategories.length > 0 ? 
+                    `CASE 
+                        WHEN category IN (${userCategories.map(() => '?').join(',')}) THEN 1 
+                        ELSE 0 
+                    END`
+                    : '0'
+                } as interest_match
             FROM events 
-            ORDER BY event_date DESC
-        `);
+            ORDER BY interest_match DESC, event_date ASC
+        `;
+        
+        const [results] = await db.query(query, userCategories);
         
         res.json({
             success: true,
@@ -261,8 +352,7 @@ app.get("/events", async (req, res) => {
         console.error('Error fetching events:', error);
         res.status(500).json({
             success: false,
-            message: "Failed to fetch events",
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            message: "Failed to fetch events"
         });
     }
 });
@@ -390,6 +480,109 @@ app.post("/register", async (req, res) => {
             success: false,
             message: "Failed to register user",
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+// Save user categories
+app.post("/user-categories", async (req, res) => {
+    try {
+        const { userId, categories } = req.body;
+        
+        if (!userId || !Array.isArray(categories)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid request data"
+            });
+        }
+
+        // Delete existing categories for user
+        await db.query("DELETE FROM user_categories WHERE user_id = ?", [userId]);
+
+        // Insert new categories
+        for (const category of categories) {
+            await db.query(
+                "INSERT INTO user_categories (user_id, category) VALUES (?, ?)",
+                [userId, category]
+            );
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Categories updated successfully"
+        });
+    } catch (error) {
+        console.error('Error updating user categories:', error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to update categories",
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+// Get user categories
+app.get("/user-categories/:userId", async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const [results] = await db.query(
+            "SELECT category FROM user_categories WHERE user_id = ?",
+            [userId]
+        );
+
+        res.json({
+            success: true,
+            data: results.map(row => row.category)
+        });
+    } catch (error) {
+        console.error('Error fetching user categories:', error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch categories"
+        });
+    }
+});
+
+// Get notifications for a user
+app.get("/notifications/:userId", async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const [notifications] = await db.query(
+            "SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50",
+            [userId]
+        );
+        
+        res.json({
+            success: true,
+            notifications
+        });
+    } catch (error) {
+        console.error('Error fetching notifications:', error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch notifications"
+        });
+    }
+});
+
+// Mark a notification as read
+app.put("/notifications/:notificationId/read", async (req, res) => {
+    try {
+        const { notificationId } = req.params;
+        await db.query(
+            "UPDATE notifications SET `read` = TRUE WHERE id = ?",
+            [notificationId]
+        );
+        
+        res.json({
+            success: true,
+            message: "Notification marked as read"
+        });
+    } catch (error) {
+        console.error('Error updating notification:', error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to update notification"
         });
     }
 });
