@@ -1,453 +1,631 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Event Details - CommunityVibe</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* Add any additional styles here */
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(0, 0, 0, .1);
-            border-radius: 50%;
-            border-top-color: var(--primary-color);
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-    </style>
     <script src="js/config.js"></script>
     <script src="js/toast.js"></script>
     <script src="js/nav.js"></script>
-    <script src="js/event-details.js"></script>
-</head>
+    <style>
+        /* Base Styles */
+:root {
+  --primary-color: #4a80f0;
+  --secondary-color: #ff7d45;
+  --text-color: #333333;
+  --light-text: #777777;
+  --background-color: #ffffff;
+  --light-bg: #f5f7fa;
+  --border-color: #e0e0e0;
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  --border-radius: 8px;
+  --transition: all 0.3s ease;
+}
 
-<div id="toast-container"></div>
-<body>
-    <header>
-        <!-- Navigation will be inserted here by nav.js -->
-    </header>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--text-color);
+  line-height: 1.6;
+  background-color: var(--light-bg);
+}
+
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+a:hover {
+  color: #2c5cd9;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: var(--transition);
+  border: none;
+}
+
+.primary-btn {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.primary-btn:hover {
+  background-color: #3a6bcd;
+  transform: translateY(-2px);
+}
+
+.secondary-btn {
+  background-color: white;
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+}
+
+.secondary-btn:hover {
+  background-color: #f8f9fa;
+  transform: translateY(-2px);
+}
+
+.btn-full {
+  width: 100%;
+}
+
+/* Layout */
+header, footer {
+  background-color: white;
+  box-shadow: var(--shadow);
+  padding: 15px 0;
+}
+
+main {
+  min-height: calc(100vh - 140px);
+  padding: 30px 0;
+}
+
+.event-details-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Event Breadcrumb */
+.event-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: var(--light-text);
+}
+
+.event-breadcrumb i {
+  font-size: 10px;
+}
+
+/* Event Header */
+.event-header {
+  background-color: white;
+  border-radius: var(--border-radius);
+  padding: 30px;
+  margin-bottom: 30px;
+  box-shadow: var(--shadow);
+}
+
+.event-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.event-header-info {
+  flex: 1;
+}
+
+.event-tags {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.event-category, .event-status {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.event-category {
+  background-color: #e6effd;
+  color: var(--primary-color);
+}
+
+.event-status {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.event-meta-large {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.event-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--light-text);
+}
+
+.event-meta-item i {
+  color: var(--primary-color);
+}
+
+h1 {
+  font-size: 28px;
+  margin: 10px 0;
+}
+
+.event-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Event Content */
+.event-content {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 30px;
+}
+
+.event-main {
+  background-color: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.event-image-large {
+  width: 100%;
+  height: 400px;
+  overflow: hidden;
+}
+
+.event-image-large img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.event-description {
+  padding: 30px;
+}
+
+.event-description h2 {
+  margin-bottom: 20px;
+  font-size: 22px;
+  color: var(--text-color);
+}
+
+#event-description-text {
+  line-height: 1.8;
+}
+
+/* Sidebar */
+.event-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sidebar-card {
+  background-color: white;
+  border-radius: var(--border-radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+
+.sidebar-card h2 {
+  font-size: 18px;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.event-meta {
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.meta-item i {
+  color: var(--primary-color);
+  width: 20px;
+  text-align: center;
+}
+
+/* Organizer */
+.organizer-profile {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.organizer-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.organizer-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.organizer-details h3 {
+  font-size: 16px;
+  margin-bottom: 5px;
+}
+
+.organizer-details p {
+  font-size: 14px;
+  color: var(--light-text);
+}
+
+/* Location */
+.location-address {
+  margin-bottom: 15px;
+}
+
+.location-address p {
+  margin-bottom: 5px;
+}
+
+#map {
+  height: 180px;
+  border-radius: var(--border-radius);
+  margin-bottom: 15px;
+  background-color: #eee;
+}
+
+/* Social Share */
+.social-share {
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 0;
+}
+
+.social-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: white;
+  transition: var(--transition);
+}
+
+.social-icon.facebook {
+  background-color: #1877f2;
+}
+
+.social-icon.twitter {
+  background-color: #1da1f2;
+}
+
+.social-icon.email {
+  background-color: #ea4335;
+}
+
+.social-icon:hover {
+  transform: scale(1.1);
+  opacity: 0.9;
+}
+
+/* Similar Events */
+.similar-events {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+#similar-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.similar-event {
+  display: flex;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.similar-event:last-child {
+  border-bottom: none;
+}
+
+.similar-event-image {
+  width: 70px;
+  height: 70px;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.similar-event-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.similar-event-info h3 {
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+.similar-event-date {
+  font-size: 12px;
+  color: var(--light-text);
+}
+
+/* Toast Notifications */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: white;
+  color: var(--text-color);
+  padding: 15px 20px;
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 1000;
+  transform: translateY(100px);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.toast i {
+  font-size: 20px;
+}
+
+.toast.success {
+  border-left: 4px solid #4caf50;
+}
+
+.toast.success i {
+  color: #4caf50;
+}
+
+.toast.error {
+  border-left: 4px solid #f44336;
+}
+
+.toast.error i {
+  color: #f44336;
+}
+
+/* Media Queries */
+@media (max-width: 992px) {
+  .event-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .event-header-content {
+    flex-direction: column;
+  }
+  
+  .event-actions {
+    flex-direction: row;
+    margin-top: 20px;
+  }
+  
+  .event-image-large {
+    height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .event-meta-large {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .event-image-large {
+    height: 250px;
+  }
+  
+  .event-header, .event-description {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+    </style>
+    <style>
+        .loading-indicator {
+            text-align: center;
+            padding: 2rem;
+            color: var(--light-text);
+        }
+        
+        body.loading .event-content {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+    </style>
+    <header></header>
 
     <main>
-        <section class="event-details-container">
+        <div class="event-details-container">
+            <!-- Event Breadcrumb -->
+            <div class="event-breadcrumb">
+                <a href="events.html">Events</a>
+                <i class="fas fa-chevron-right"></i>
+                <span id="event-title">Loading...</span>
+            </div>
+
+            <!-- Event Header -->
             <div class="event-header">
-                <div class="event-breadcrumb">
-                    <a href="events.html">Events</a> <i class="fas fa-chevron-right"></i> <span
-                        id="event-title-breadcrumb">Event Details</span>
-                </div>
                 <div class="event-header-content">
                     <div class="event-header-info">
                         <div class="event-tags">
-                            <span class="event-category" id="event-category">Loading...</span>
-                            <span class="event-status" id="event-status">Loading...</span>
+                            <span class="event-category" id="event-category"></span>
+                            <span class="event-status">Open for Registration</span>
                         </div>
-                        <h1 id="event-title">Loading Event...</h1>
+                        <h1 id="event-title-header">Loading...</h1>
                         <div class="event-meta-large">
                             <div class="event-meta-item">
                                 <i class="far fa-calendar"></i>
-                                <span id="event-date">Loading...</span>
+                                <span id="event-date"></span>
                             </div>
                             <div class="event-meta-item">
                                 <i class="far fa-clock"></i>
-                                <span id="event-time">Loading...</span>
+                                <span id="event-time"></span>
                             </div>
                             <div class="event-meta-item">
                                 <i class="fas fa-map-marker-alt"></i>
-                                <span id="event-venue">Loading...</span>
+                                <span id="event-venue"></span>
                             </div>
                         </div>
                     </div>
                     <div class="event-actions">
-                        <button class="btn primary-btn" id="rsvp-btn"><i class="far fa-calendar-plus"></i> RSVP</button>
-                        <button class="btn secondary-btn" id="share-btn"><i class="fas fa-share-alt"></i> Share</button>
+                        <button class="btn primary-btn" id="rsvp-btn">
+                            <i class="fas fa-ticket-alt"></i> RSVP Now
+                        </button>
+                        <button class="btn secondary-btn" id="share-btn">
+                            <i class="fas fa-share-alt"></i> Share
+                        </button>
                     </div>
                 </div>
             </div>
 
+            <!-- Event Content -->
             <div class="event-content">
                 <div class="event-main">
                     <div class="event-image-large">
-                        <img id="event-image" src="" alt="Event image">
+                        <img id="event-image" src="" alt="Event Image">
                     </div>
-
-                    <div class="event-description" id="event-description">
+                    <div class="event-description">
                         <h2>About This Event</h2>
-                        <p>Loading event details...</p>
+                        <div id="event-description-text"></div>
+                    </div>
+                </div>
+
+                <div class="event-sidebar">
+                    <div class="sidebar-card">
+                        <button class="btn primary-btn btn-full" id="sidebar-rsvp-btn">
+                            <i class="fas fa-ticket-alt"></i> RSVP Now
+                        </button>
+                        <div class="event-meta">
+                            <div class="meta-item">
+                                <i class="fas fa-users"></i>
+                                <span id="event-capacity"></span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-tag"></i>
+                                <span id="event-price"></span>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="organizer-info">
+                    <div class="sidebar-card organizer-info">
                         <h2>Organizer</h2>
                         <div class="organizer-profile">
                             <div class="organizer-avatar">
-                                <img id="organizer-image" src="" alt="Organizer image">
+                                <img id="organizer-image" src="" alt="Organizer">
                             </div>
                             <div class="organizer-details">
-                                <h3 id="organizer-name">Loading...</h3>
-                                <p id="organizer-description">Loading organizer information...</p>
-                                <a href="#" class="organizer-link" id="organizer-link">View Profile</a>
+                                <h3 id="organizer-name"></h3>
+                                <p id="organizer-description"></p>
                             </div>
                         </div>
                     </div>
 
-                    <div class="location-details">
+                    <div class="sidebar-card location-details">
                         <h2>Location</h2>
                         <div class="location-address">
-                            <p><strong id="location-venue">Loading...</strong></p>
-                            <p id="location-address">Loading address...</p>
+                            <p id="venue-name"></p>
+                            <p id="venue-address"></p>
                         </div>
-                        <div class="location-map">
-                            <div class="map-placeholder">
-                                <div class="map-image" id="map"></div>
-                                <a href="#" class="btn secondary-btn map-btn" id="directions-btn"><i
-                                        class="fas fa-directions"></i> Get Directions</a>
-                            </div>
+                        <div id="map" class="location-map"></div>
+                        <a href="#" class="btn secondary-btn btn-full" id="directions-btn" target="_blank">
+                            <i class="fas fa-directions"></i> Get Directions
+                        </a>
+                    </div>
+
+                    <div class="sidebar-card">
+                        <h2>Share This Event</h2>
+                        <div class="social-share">
+                            <a href="#" id="facebook-share" class="social-icon facebook">
+                                <i class="fab fa-facebook-f"></i>
+                            </a>
+                            <a href="#" id="twitter-share" class="social-icon twitter">
+                                <i class="fab fa-twitter"></i>
+                            </a>
+                            <a href="#" id="email-share" class="social-icon email">
+                                <i class="fas fa-envelope"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-card similar-events">
+                        <h2>Similar Events</h2>
+                        <div id="similar-events-list">
+                            <!-- Similar events will be loaded here -->
                         </div>
                     </div>
                 </div>
-
-                <aside class="event-sidebar">
-                    <div class="sidebar-card">
-                        <h3>Event Details</h3>
-                        <ul class="sidebar-details">
-                            <li>
-                                <i class="far fa-calendar"></i>
-                                <div>
-                                    <span class="detail-label">Date</span>
-                                    <span class="detail-value" id="sidebar-date">Loading...</span>
-                                </div>
-                            </li>
-                            <li>
-                                <i class="far fa-clock"></i>
-                                <div>
-                                    <span class="detail-label">Time</span>
-                                    <span class="detail-value" id="sidebar-time">Loading...</span>
-                                </div>
-                            </li>
-                            <li>
-                                <i class="fas fa-map-marker-alt"></i>
-                                <div>
-                                    <span class="detail-label">Location</span>
-                                    <span class="detail-value" id="sidebar-location">Loading...</span>
-                                </div>
-                            </li>
-                            <li>
-                                <i class="fas fa-ticket-alt"></i>
-                                <div>
-                                    <span class="detail-label">Price</span>
-                                    <span class="detail-value" id="sidebar-price">Loading...</span>
-                                </div>
-                            </li>
-                            <li>
-                                <i class="fas fa-users"></i>
-                                <div>
-                                    <span class="detail-label">Capacity</span>
-                                    <span class="detail-value" id="sidebar-capacity">Loading...</span>
-                                </div>
-                            </li>
-                        </ul>
-                        <button class="btn primary-btn btn-full" id="sidebar-rsvp-btn"><i
-                                class="far fa-calendar-plus"></i> RSVP Now</button>
-                    </div>
-
-                    <div class="sidebar-card">
-                        <h3>Share This Event</h3>
-                        <div class="social-share">
-                            <a href="#" class="social-icon facebook" id="facebook-share"><i
-                                    class="fab fa-facebook-f"></i></a>
-                            <a href="#" class="social-icon twitter" id="twitter-share"><i
-                                    class="fab fa-twitter"></i></a>
-                            <a href="#" class="social-icon instagram" id="instagram-share"><i
-                                    class="fab fa-instagram"></i></a>
-                            <a href="#" class="social-icon email" id="email-share"><i class="far fa-envelope"></i></a>
-                        </div>
-                    </div>
-
-                    <div class="sidebar-card">
-                        <h3>Similar Events</h3>
-                        <div class="similar-events" id="similar-events">
-                            <!-- Similar events will be loaded dynamically -->
-                            <p>Loading similar events...</p>
-                        </div>
-                    </div>
-                </aside>
             </div>
-        </section>
-
-        <section class="event-share">
-            <div class="event-share-content">
-                <h2>Have an event to share?</h2>
-                <p>Add your community event to our platform and reach more people.</p>
-                <a href="create-event.html" class="btn primary-btn">Create an Event</a>
-            </div>
-        </section>
+        </div>
     </main>
 
-    <script>
-        // Helper functions
-        function formatDate(dateString) {
-            if (!dateString) return '';
-            const options = { year: 'numeric', month: 'long', day: 'numeric' };
-            return new Date(dateString).toLocaleDateString(undefined, options);
-        }
-
-        function formatTime(timeString) {
-            if (!timeString) return '';
-            return new Date(`1970-01-01T${timeString}`).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
-
-        // Initialize Google Maps
-        function initMap(lat, lng, title) {
-            try {
-                if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
-                    throw new Error("Google Maps API not loaded");
-                }
-
-                const mapElement = document.getElementById("map");
-                if (!mapElement) return;
-
-                const map = new google.maps.Map(mapElement, {
-                    center: { lat: parseFloat(lat), lng: parseFloat(lng) },
-                    zoom: 15
-                });
-
-                new google.maps.Marker({
-                    position: { lat: parseFloat(lat), lng: parseFloat(lng) },
-                    map: map,
-                    title: title
-                });
-
-            } catch (error) {
-                console.error("Map initialization error:", error);
-                document.getElementById("map").innerHTML = `
-                    <div class="map-error">
-                        <i class="fas fa-map-marked-alt"></i>
-                        <p>Could not load map</p>
-                    </div>
-                `;
-            }
-        }
-
-        // Load Google Maps API
-        function loadGoogleMaps() {
-            return new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAiv9xCoo-CoZ7xZn5u6t2huPdej0qzMCk&libraries=places&loading=async&callback=initMap" async defer
-                script.async = true;
-                script.defer = true;
-                script.onerror = () => reject(new Error("Failed to load Google Maps API"));
-                document.head.appendChild(script);
-                script.onload = resolve;
-            });
-        }
-
-        // Main function to load event details
-        async function loadEventDetails() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const eventId = urlParams.get('id');
-
-            if (!eventId) {
-                window.location.href = 'events.html';
-                return;
-            }
-
-            // Show loading state
-            document.querySelectorAll('[id^="event-"], [id^="sidebar-"]').forEach(el => {
-                if (el.tagName === 'IMG') {
-                    el.src = '';
-                    el.alt = 'Loading...';
-                } else {
-                    el.innerHTML = `<span class="loading-spinner"></span> Loading...`;
-                }
-            });
-
-            try {
-                // Load Google Maps first
-                await loadGoogleMaps();
-
-                // Fetch event details
-                const response = await fetch(`${CONFIG.getApiUrl('events')}/${eventId}`);
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                console.log('Event data:', data); // Debug log
-
-                if (!data.success || !data.data) {
-                    throw new Error(data.message || 'Invalid event data');
-                }
-
-                const event = data.data;
-
-                // Update basic info
-                document.getElementById('event-title').textContent = event.title;
-                document.getElementById('event-title-breadcrumb').textContent = event.title;
-                document.getElementById('event-category').textContent = event.category;
-                document.getElementById('event-date').textContent = formatDate(event.event_date);
-                document.getElementById('event-time').textContent = `${formatTime(event.start_time)} - ${formatTime(event.end_time)}`;
-                document.getElementById('event-venue').textContent = event.venue;
-
-                // Update images
-                document.getElementById('event-image').src = event.image
-                    ? `${CONFIG.getUploadsUrl()}/${event.image}`
-                    : `${CONFIG.getUploadsUrl()}/default.jpg`;
-                document.getElementById('event-image').alt = event.title;
-
-                document.getElementById('organizer-image').src = event.organizer_image
-                    ? `${CONFIG.getUploadsUrl()}/${event.organizer_image}`
-                    : `${CONFIG.getUploadsUrl()}/default.jpg`;
-
-                // Update organizer info
-                document.getElementById('organizer-name').textContent = event.organizer_name;
-                document.getElementById('organizer-description').textContent = event.organizer_description || 'No description available';
-                document.getElementById('organizer-link').href = `organizer.html?id=${event.organizer_id || ''}`;
-
-                // Update location info
-                document.getElementById('location-venue').textContent = event.venue;
-                document.getElementById('location-address').textContent = event.address || 'Address not specified';
-
-                // Update sidebar details
-                document.getElementById('sidebar-date').textContent = formatDate(event.event_date);
-                document.getElementById('sidebar-time').textContent = `${formatTime(event.start_time)} - ${formatTime(event.end_time)}`;
-                document.getElementById('sidebar-location').textContent = event.venue;
-                document.getElementById('sidebar-price').textContent =
-                    event.price_type === 'paid' && event.price_amount
-                        ? `$${parseFloat(event.price_amount).toFixed(2)}`
-                        : 'Free';
-                document.getElementById('sidebar-capacity').textContent =
-                    event.capacity ? `${event.capacity} spots available` : 'Unlimited capacity';
-
-                // Initialize map if coordinates exist
-                if (event.latitude && event.longitude) {
-                    initMap(event.latitude, event.longitude, event.venue);
-                    document.getElementById('directions-btn').href =
-                        `https://www.google.com/maps/dir/?api=1&destination=${event.latitude},${event.longitude}`;
-                }
-
-                // Load similar events
-                loadSimilarEvents(event.category, event.id);
-
-            } catch (error) {
-                console.error('Error loading event details:', error);
-                window.toast.show({
-                    title: 'Error!',
-                    message: 'Failed to load event details',
-                    type: 'error',
-                    duration: 5000
-                });
-
-                // Show error state
-                document.getElementById('event-title').textContent = 'Error Loading Event';
-                document.getElementById('event-description').querySelector('p').textContent =
-                    'Could not load event details. Please try again later.';
-            }
-        }
-
-        // Load similar events
-        async function loadSimilarEvents(category, currentEventId) {
-            try {
-                const response = await fetch(`${CONFIG.getApiUrl('events')}/similar/${category}/${currentEventId}`);
-                if (!response.ok) throw new Error('Failed to load similar events');
-
-                const data = await response.json();
-                const container = document.getElementById('similar-events');
-                container.innerHTML = '';
-
-                if (!data.data || data.data.length === 0) {
-                    container.innerHTML = '<p>No similar events found</p>';
-                    return;
-                }
-
-                data.data.forEach(event => {
-                    const eventElement = document.createElement('a');
-                    eventElement.className = 'similar-event';
-                    eventElement.href = `event.html?id=${event.id}`;
-
-                    const imageUrl = event.image
-                        ? `${CONFIG.getUploadsUrl()}/${event.image}`
-                        : `${CONFIG.getUploadsUrl()}/default.jpg`;
-
-                    eventElement.innerHTML = `
-                        <div class="similar-event-image">
-                            <img src="${imageUrl}" alt="${event.title}">
-                        </div>
-                        <div class="similar-event-info">
-                            <h4>${event.title}</h4>
-                            <p>${formatDate(event.event_date)}</p>
-                        </div>
-                    `;
-
-                    container.appendChild(eventElement);
-                });
-            } catch (error) {
-                console.error('Error loading similar events:', error);
-                document.getElementById('similar-events').innerHTML =
-                    '<p>Error loading similar events</p>';
-            }
-        }
-
-        // Initialize when DOM is ready
-        document.addEventListener('DOMContentLoaded', loadEventDetails);
-    </script>
-
-    <!-- Load Google Maps API with callback -->
-    <script>
-        // This global function will be called by Google Maps API
-        window.initMap = function () {
-            // The actual initialization happens in loadEventDetails()
-            console.log('Google Maps API loaded');
-        };
-    </script>
-
     <footer>
-        <div class="footer-content">
-            <div class="footer-logo">
-                <div class="logo">Community<span>Vibe</span></div>
-                <p>Connecting communities through shared experiences and local events.</p>
-            </div>
-            <div class="footer-links">
-                <div class="footer-section">
-                    <h4>Quick Links</h4>
-                    <ul>
-                        <li><a href="index.html">Home</a></li>
-                        <li><a href="events.html">Browse Events</a></li>
-                        <li><a href="create-event.html">Create Event</a></li>
-                    </ul>
-                </div>
-                <div class="footer-section">
-                    <h4>Account</h4>
-                    <ul>
-                        <li><a href="login.html">Sign In</a></li>
-                        <li><a href="signup.html">Register</a></li>
-                    </ul>
-                </div>
-                <div class="footer-section">
-                    <h4>Contact</h4>
-                    <ul>
-                        <li><a href="mailto:contact@communityvibe.com"><i class="far fa-envelope"></i>
-                                contact@communityvibe.com</a></li>
-                        <li><a href="#"><i class="fas fa-map-marker-alt"></i> 123 Community St, City, State</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>&copy; 2025 CommunityVibe. All rights reserved.</p>
-        </div>
+        <!-- Footer content will be handled by nav.js -->
     </footer>
-</body>
 
+    <script src="js/config.js"></script>
+    <script src="js/toast.js"></script>
+    <script src="js/event-details.js"></script>
+    <script src="js/main.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAiv9xCoo-CoZ7xZn5u6t2huPdej0qzMCk&callback=initMap" async defer></script>
+</body>
 </html>

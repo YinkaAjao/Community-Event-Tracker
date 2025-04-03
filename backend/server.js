@@ -84,34 +84,111 @@ async function verifyDatabaseConnection() {
 // Ensure tables exist
 async function ensureEventsTableExists() {
     try {
-        const createTableQuery = `
-            CREATE TABLE IF NOT EXISTS events (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                title VARCHAR(255) NOT NULL,
-                category VARCHAR(100) NOT NULL,
-                event_date DATE NOT NULL,
-                start_time TIME NOT NULL,
-                end_time TIME,
-                venue VARCHAR(255) NOT NULL,
-                address VARCHAR(255),
-                description TEXT NOT NULL,
-                image VARCHAR(255) DEFAULT 'default.jpg',
-                latitude DECIMAL(10, 8),
-                longitude DECIMAL(11, 8),
-                capacity INT,
-                price_type ENUM('free', 'paid') DEFAULT 'free',
-                price_amount DECIMAL(10,2),
-                organizer_name VARCHAR(255),
-                organizer_description TEXT,
-                organizer_image VARCHAR(255),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        `;
-        await db.query(createTableQuery);
-        console.log("✅ Ensured `events` table exists.");
+        // First check if table exists
+        const [tables] = await db.query('SHOW TABLES LIKE "events"');
+        
+        if (tables.length > 0) {
+            // Table exists, check for missing columns
+            const [columns] = await db.query('SHOW COLUMNS FROM events');
+            const columnNames = columns.map(col => col.Field);
+            
+            const columnsToAdd = [];
+            
+            // Check for each required column
+            if (!columnNames.includes('title')) {
+                columnsToAdd.push('ADD COLUMN title VARCHAR(255) NOT NULL');
+            }
+            if (!columnNames.includes('category')) {
+                columnsToAdd.push('ADD COLUMN category VARCHAR(100) NOT NULL');
+            }
+            if (!columnNames.includes('event_date')) {
+                columnsToAdd.push('ADD COLUMN event_date DATE NOT NULL');
+            }
+            if (!columnNames.includes('start_time')) {
+                columnsToAdd.push('ADD COLUMN start_time TIME NOT NULL');
+            }
+            if (!columnNames.includes('end_time')) {
+                columnsToAdd.push('ADD COLUMN end_time TIME');
+            }
+            if (!columnNames.includes('venue')) {
+                columnsToAdd.push('ADD COLUMN venue VARCHAR(255) NOT NULL');
+            }
+            if (!columnNames.includes('address')) {
+                columnsToAdd.push('ADD COLUMN address VARCHAR(255)');
+            }
+            if (!columnNames.includes('latitude')) {
+                columnsToAdd.push('ADD COLUMN latitude DECIMAL(10, 8) DEFAULT NULL');
+            }
+            if (!columnNames.includes('longitude')) {
+                columnsToAdd.push('ADD COLUMN longitude DECIMAL(11, 8) DEFAULT NULL');
+            }
+            if (!columnNames.includes('description')) {
+                columnsToAdd.push('ADD COLUMN description TEXT NOT NULL');
+            }
+            if (!columnNames.includes('image')) {
+                columnsToAdd.push('ADD COLUMN image VARCHAR(255) DEFAULT "default.jpg"');
+            }
+            if (!columnNames.includes('capacity')) {
+                columnsToAdd.push('ADD COLUMN capacity INT DEFAULT NULL');
+            }
+            if (!columnNames.includes('price_type')) {
+                columnsToAdd.push('ADD COLUMN price_type ENUM("free", "paid") DEFAULT "free"');
+            }
+            if (!columnNames.includes('price_amount')) {
+                columnsToAdd.push('ADD COLUMN price_amount DECIMAL(10,2) DEFAULT NULL');
+            }
+            if (!columnNames.includes('organizer_name')) {
+                columnsToAdd.push('ADD COLUMN organizer_name VARCHAR(255)');
+            }
+            if (!columnNames.includes('organizer_description')) {
+                columnsToAdd.push('ADD COLUMN organizer_description TEXT');
+            }
+            if (!columnNames.includes('organizer_image')) {
+                columnsToAdd.push('ADD COLUMN organizer_image VARCHAR(255)');
+            }
+            if (!columnNames.includes('created_at')) {
+                columnsToAdd.push('ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
+            }
+
+            // If there are columns to add, alter table
+            if (columnsToAdd.length > 0) {
+                const alterQuery = `ALTER TABLE events ${columnsToAdd.join(', ')}`;
+                await db.query(alterQuery);
+                console.log('Added missing columns to events table');
+            }
+        } else {
+            // Create table if it doesn't exist
+            const createTableQuery = `
+                CREATE TABLE events (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    title VARCHAR(255) NOT NULL,
+                    category VARCHAR(100) NOT NULL,
+                    event_date DATE NOT NULL,
+                    start_time TIME NOT NULL,
+                    end_time TIME,
+                    venue VARCHAR(255) NOT NULL,
+                    address VARCHAR(255),
+                    latitude DECIMAL(10, 8) DEFAULT NULL,
+                    longitude DECIMAL(11, 8) DEFAULT NULL,
+                    description TEXT NOT NULL,
+                    image VARCHAR(255) DEFAULT 'default.jpg',
+                    capacity INT DEFAULT NULL,
+                    price_type ENUM('free', 'paid') DEFAULT 'free',
+                    price_amount DECIMAL(10,2) DEFAULT NULL,
+                    organizer_name VARCHAR(255),
+                    organizer_description TEXT,
+                    organizer_image VARCHAR(255),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            `;
+            await db.query(createTableQuery);
+            console.log('Created events table');
+        }
+        
+        console.log("✅ Events table is ready");
     } catch (err) {
-        console.error("❌ Failed to ensure `events` table exists:", err.message);
-        process.exit(1);
+        console.error("❌ Error with events table:", err.message);
+        throw err;
     }
 }
 
@@ -372,8 +449,8 @@ app.get("/event/:id", async (req, res) => {
                 address,
                 description,
                 image,
-                latitude,
-                longitude,
+                COALESCE(latitude, 0) as latitude,
+                COALESCE(longitude, 0) as longitude,
                 capacity,
                 price_type,
                 price_amount,
