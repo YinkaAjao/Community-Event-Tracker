@@ -5,29 +5,17 @@
 const CONFIG = {
     // API settings
     api: {
-        // Updated to use the correct port for the backend API
-        baseUrl: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-            ? `http://${window.location.hostname}:5000` 
-            : '',
-        version: 'v1'
+        baseUrl: 'http://localhost:5001',
+        uploadsPath: '/uploads'
     },
-    
-    // Application settings
-    app: {
-        name: 'CommunityVibe',
-        environment: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-            ? 'development' 
-            : 'production'
-    },
-    
-    // Get complete API URL
-    getApiUrl: function(endpoint) {
+
+    // Helper methods
+    getApiUrl(endpoint) {
         return `${this.api.baseUrl}/${endpoint}`;
     },
-    
-    // Get uploads URL
-    getUploadsUrl: function() {
-        return `${this.api.baseUrl}/uploads`;
+
+    getUploadsUrl(filename = '') {
+        return `${this.api.baseUrl}${this.api.uploadsPath}/${filename}`;
     }
 };
 

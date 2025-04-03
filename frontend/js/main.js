@@ -1,5 +1,67 @@
 // js/main.js
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+    // Check server connection first
+    try {
+        const response = await fetch(CONFIG.getApiUrl('health'));
+        if (!response.ok) throw new Error('Server health check failed');
+        console.log('✅ Connected to server successfully');
+    } catch (error) {
+        console.error('❌ Server connection failed:', error);
+        document.body.innerHTML = `
+            <div class="error-message">
+                Unable to connect to server. Please ensure the server is running on port 5001.
+                <br><button onclick="window.location.reload()">Retry</button>
+            </div>`;
+        return;
+    }
+
+    // Load upcoming events
+    const upcomingEventsContainer = document.getElementById('upcomingEvents');
+    if (upcomingEventsContainer) {
+        try {
+            const response = await fetch(CONFIG.getApiUrl('events'));
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to load events');
+            }
+
+            if (data.data.length === 0) {
+                upcomingEventsContainer.innerHTML = '<p>No upcoming events found</p>';
+                return;
+            }
+
+            upcomingEventsContainer.innerHTML = data.data.map(event => `
+                <div class="event-card">
+                    <div class="event-image">
+                        <img src="${CONFIG.getUploadsUrl(event.image)}" 
+                             alt="${event.title}"
+                             onerror="this.src='${CONFIG.getUploadsUrl('default.jpg')}'">
+                        <div class="event-date">${event.event_date}</div>
+                        <div class="event-tag">${event.category}</div>
+                    </div>
+                    <div class="event-details">
+                        <h3>${event.title}</h3>
+                        <p>${event.description || 'No description available'}</p>
+                        <div class="event-meta">
+                            <span><i class="fas fa-map-marker-alt"></i> ${event.venue}</span>
+                            <span><i class="far fa-clock"></i> ${event.start_time}</span>
+                        </div>
+                        <a href="event-details.html?id=${event.id}" class="btn primary-btn">View Details</a>
+                    </div>
+                </div>
+            `).join('');
+
+        } catch (error) {
+            console.error('Error loading events:', error);
+            upcomingEventsContainer.innerHTML = `
+                <div class="error-message">
+                    Failed to load upcoming events. Please try again later.
+                    <br><button onclick="window.location.reload()">Retry</button>
+                </div>`;
+        }
+    }
+
     // Create navigation
     createNav();
 
